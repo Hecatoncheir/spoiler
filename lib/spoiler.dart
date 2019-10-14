@@ -165,7 +165,7 @@ class SpoilerState extends State<Spoiler> with SingleTickerProviderStateMixin {
                   return AnimatedBuilder(
                     animation: animation,
                     builder: (BuildContext context, Widget child) => Container(
-                      key: Key('child'),
+                      key: isOpened ? Key('child_opened') : Key('child_closed'),
                       height: animation.value > 0 ? animation.value : 0,
                       child: Wrap(
                         children: <Widget>[
@@ -176,7 +176,7 @@ class SpoilerState extends State<Spoiler> with SingleTickerProviderStateMixin {
                   );
                 } else {
                   return Container(
-                    key: Key('child'),
+                    key: isOpened ? Key('child_opened') : Key('child_closed'),
                     child: Container(
                       key: _childKey,
                       child: Wrap(
