@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 
@@ -43,6 +45,34 @@ void main() {
       expect(state.animation.value, isPositive);
 
       expect(find.text('context'), findsOneWidget);
+    });
+  });
+
+  group('Spoiler wiget details', () {
+    testWidgets('can be sended when widgets ready', (tester) async {
+      final details = StreamController<SpoilerDetails>();
+
+      final widget = Spoiler(
+          spoilerDetails: details,
+          header: SizedBox(width: 10, height: 15),
+          child: SizedBox(width: 20, height: 25));
+
+      await tester.pumpWidget(MaterialApp(home: Scaffold(body: widget)));
+      await tester.pumpAndSettle();
+
+      await tester.runAsync(() async {
+        await for (SpoilerDetails spoilerDetails in details.stream) {
+          expect(spoilerDetails.headerWidth, equals(10));
+          expect(spoilerDetails.headerHeight, equals(15));
+
+          expect(spoilerDetails.childWidth, equals(20));
+          expect(spoilerDetails.childHeight, equals(25));
+
+          break;
+        }
+      });
+
+      details.close();
     });
   });
 }
