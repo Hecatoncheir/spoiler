@@ -1,9 +1,4 @@
-// This is a basic Flutter widget test.
-//
-// To perform an interaction with a widget in your test, use the WidgetTester
-// utility that Flutter provides. For example, you can send tap and scroll
-// gestures. You can also use WidgetTester to find child widgets in the widget
-// tree, read text, and verify that the values of widget properties are correct.
+import 'dart:async';
 
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
@@ -26,23 +21,58 @@ void main() {
       expect(find.text('test header name'), findsOneWidget);
     });
 
-    testWidgets('Spoiler can show and hide content',
-        (WidgetTester tester) async {
+    testWidgets('can show and hide content', (WidgetTester tester) async {
       final widget = Spoiler(child: Text('context'));
       await tester.pumpWidget(MaterialApp(home: Scaffold(body: widget)));
 
       final SpoilerState state = tester.state(find.byWidget(widget));
 
       expect(state.isOpened, isFalse);
+
+      expect(find.byKey(Key('child_closed')), findsOneWidget);
+      expect(find.byKey(Key('child_opened')), findsNothing);
+
       expect(state.animation.value, equals(0));
 
       await tester.tap(find.byKey(Key('header')));
       await tester.pumpAndSettle();
 
       expect(state.isOpened, isTrue);
+
+      expect(find.byKey(Key('child_opened')), findsOneWidget);
+      expect(find.byKey(Key('child_closed')), findsNothing);
+
       expect(state.animation.value, isPositive);
 
       expect(find.text('context'), findsOneWidget);
+    });
+  });
+
+  group('Spoiler wiget details', () {
+    testWidgets('can be sended when widgets ready', (tester) async {
+      final details = StreamController<SpoilerDetails>();
+
+      final widget = Spoiler(
+          spoilerDetails: details,
+          header: SizedBox(width: 10, height: 15),
+          child: SizedBox(width: 20, height: 25));
+
+      await tester.pumpWidget(MaterialApp(home: Scaffold(body: widget)));
+      await tester.pumpAndSettle();
+
+      await tester.runAsync(() async {
+        await for (SpoilerDetails spoilerDetails in details.stream) {
+          expect(spoilerDetails.headerWidth, equals(10));
+          expect(spoilerDetails.headerHeight, equals(15));
+
+          expect(spoilerDetails.childWidth, equals(20));
+          expect(spoilerDetails.childHeight, equals(25));
+
+          break;
+        }
+      });
+
+      details.close();
     });
   });
 }

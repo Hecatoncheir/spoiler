@@ -4,6 +4,8 @@ import 'package:flutter/scheduler.dart';
 import 'package:flutter/widgets.dart';
 
 class SpoilerDetails {
+  bool isOpened;
+
   double headerWidth;
   double headerHeight;
 
@@ -11,7 +13,11 @@ class SpoilerDetails {
   double childHeight;
 
   SpoilerDetails(
-      {this.headerWidth, this.headerHeight, this.childWidth, this.childHeight});
+      {this.isOpened,
+      this.headerWidth,
+      this.headerHeight,
+      this.childWidth,
+      this.childHeight});
 }
 
 class Spoiler extends StatefulWidget {
@@ -83,6 +89,9 @@ class SpoilerState extends State<Spoiler> with SingleTickerProviderStateMixin {
         reverseCurve: widget.closeCurve);
 
     SchedulerBinding.instance.addPostFrameCallback((_) async {
+      headerWidth = _headerKey.currentContext.size.width;
+      headerHeight = _headerKey.currentContext.size.height;
+
       childWidth = _childKey.currentContext.size.width;
       childHeight = _childKey.currentContext.size.height;
 
@@ -90,8 +99,19 @@ class SpoilerState extends State<Spoiler> with SingleTickerProviderStateMixin {
           Tween(begin: 0.toDouble(), end: childHeight).animate(animation);
 
       if (widget.spoilerDetails != null) {
-        animation.addListener(() => widget.spoilerDetails.add(
-            SpoilerDetails(childWidth: childWidth, childHeight: childHeight)));
+        animation.addListener(() => widget.spoilerDetails.add(SpoilerDetails(
+            isOpened: isOpened,
+            headerWidth: headerWidth,
+            headerHeight: headerHeight,
+            childWidth: childWidth,
+            childHeight: childHeight)));
+
+        widget.spoilerDetails.add(SpoilerDetails(
+            isOpened: isOpened,
+            headerWidth: headerWidth,
+            headerHeight: headerHeight,
+            childWidth: childWidth,
+            childHeight: childHeight));
       }
 
       isReadyController.add(true);
@@ -165,7 +185,7 @@ class SpoilerState extends State<Spoiler> with SingleTickerProviderStateMixin {
                   return AnimatedBuilder(
                     animation: animation,
                     builder: (BuildContext context, Widget child) => Container(
-                      key: Key('child'),
+                      key: isOpened ? Key('child_opened') : Key('child_closed'),
                       height: animation.value > 0 ? animation.value : 0,
                       child: Wrap(
                         children: <Widget>[
@@ -176,7 +196,7 @@ class SpoilerState extends State<Spoiler> with SingleTickerProviderStateMixin {
                   );
                 } else {
                   return Container(
-                    key: Key('child'),
+                    key: isOpened ? Key('child_opened') : Key('child_closed'),
                     child: Container(
                       key: _childKey,
                       child: Wrap(
