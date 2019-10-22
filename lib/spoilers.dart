@@ -14,6 +14,9 @@ class SpoilersDetails {
   List<double> headersWidth;
   List<double> headersHeight;
 
+  double childWidth;
+  double childHeight;
+
   List<double> childrenWidth;
   List<double> childrenHeight;
 
@@ -21,6 +24,10 @@ class SpoilersDetails {
       {this.isOpened,
       this.headerWidth,
       this.headerHeight,
+      this.headersWidth,
+      this.headersHeight,
+      this.childWidth,
+      this.childHeight,
       this.childrenWidth,
       this.childrenHeight});
 }
@@ -73,9 +80,15 @@ class SpoilersState extends State<Spoilers>
 
   bool isOpened;
 
+  List<Spoiler> children;
+
   @override
   void initState() {
     super.initState();
+
+    children = widget.children == null
+        ? []
+        : createChildrenDetailsControllers(widget.children);
 
     isOpened = widget.isOpened;
 
@@ -94,6 +107,19 @@ class SpoilersState extends State<Spoilers>
         curve: widget.openCurve,
         reverseCurve: widget.closeCurve);
 
+    final spoilersDetails = <SpoilerDetails>[];
+
+    final spoilersDetailsQueue =
+        Iterable<Future>.generate(children.length, (index) async {
+      final spoiler = children[index];
+
+      await for (SpoilerDetails details
+          in spoiler.spoilerDetails.stream.asBroadcastStream()) {
+        spoilersDetails.add(details);
+        break;
+      }
+    });
+
     SchedulerBinding.instance.addPostFrameCallback((_) async {
       headerWidth = _headerKey.currentContext.size.width;
       headerHeight = _headerKey.currentContext.size.height;
@@ -104,21 +130,49 @@ class SpoilersState extends State<Spoilers>
       animation =
           Tween(begin: 0.toDouble(), end: childHeight).animate(animation);
 
-      if (widget.spoilersDetails != null) {
-        animation.addListener(() => widget.spoilersDetails.add(SpoilersDetails(
-            isOpened: isOpened,
-            headerWidth: headerWidth,
-            headerHeight: headerHeight,
-            childrenWidth: [childWidth],
-            childrenHeight: [childHeight])));
-
-        widget.spoilersDetails.add(SpoilersDetails(
-            isOpened: isOpened,
-            headerWidth: headerWidth,
-            headerHeight: headerHeight,
-            childrenWidth: [childWidth],
-            childrenHeight: [childHeight]));
+      if (spoilersDetailsQueue.isNotEmpty) {
+        await Future.wait(spoilersDetailsQueue);
       }
+
+//      children.forEach((spoiler) => spoiler.spoilerDetails.stream
+//          .asBroadcastStream()
+//          .listen((details) => print(details.isOpened)));
+
+      final headersWidth = <double>[];
+      final headersHeight = <double>[];
+
+      final childrenWidth = <double>[];
+      final childrenHeight = <double>[];
+
+      for (SpoilerDetails details in spoilersDetails) {
+        headersWidth.add(details.headerWidth);
+        headersHeight.add(details.headerHeight);
+
+        childrenWidth.add(details.childWidth);
+        childrenHeight.add(details.childHeight);
+      }
+
+      animation.addListener(() => widget?.spoilersDetails?.add(SpoilersDetails(
+          isOpened: isOpened,
+          headerWidth: headerWidth,
+          headerHeight: headerHeight,
+          headersWidth: headersWidth,
+          headersHeight: headersHeight,
+          childWidth: childWidth,
+          childHeight: childHeight,
+          childrenWidth: childrenWidth,
+          childrenHeight: childrenHeight)));
+
+      widget?.spoilersDetails?.add(SpoilersDetails(
+          isOpened: isOpened,
+          headerWidth: headerWidth,
+          headerHeight: headerHeight,
+          headersWidth: headersWidth,
+          headersHeight: headersHeight,
+          childWidth: childWidth,
+          childHeight: childHeight,
+          childrenWidth: childrenWidth,
+          childrenHeight: childrenHeight));
 
       isReadyController.add(true);
 
@@ -146,7 +200,37 @@ class SpoilersState extends State<Spoilers>
     animationController.dispose();
     isOpenController.close();
     isReadyController.close();
+    children.forEach((spoiler) => spoiler.spoilerDetails.close());
     super.dispose();
+  }
+
+  List<Spoiler> createChildrenDetailsControllers(List<Spoiler> spoilers) {
+    final spoilersWithDetailsControllers = <Spoiler>[];
+
+    for (Spoiler spoiler in spoilers) {
+      if (spoiler.spoilerDetails != null) {
+        spoilersWithDetailsControllers.add(spoiler);
+      } else {
+        // ignore: close_sinks
+        final detailsController = StreamController<SpoilerDetails>();
+
+        final updatedSpoiler = Spoiler(
+          spoilerDetails: detailsController,
+          header: spoiler.header,
+          child: spoiler.child,
+          duration: spoiler.duration,
+          isOpened: spoiler.isOpened,
+          openCurve: spoiler.openCurve,
+          closeCurve: spoiler.closeCurve,
+          waitFirstCloseAnimationBeforeOpen:
+              spoiler.waitFirstCloseAnimationBeforeOpen,
+        );
+
+        spoilersWithDetailsControllers.add(updatedSpoiler);
+      }
+    }
+
+    return spoilersWithDetailsControllers;
   }
 
   Future<void> toggle() async {
@@ -200,9 +284,8 @@ class SpoilersState extends State<Spoilers>
                           Column(
                             mainAxisSize: MainAxisSize.min,
                             crossAxisAlignment: CrossAxisAlignment.start,
-                            children: widget.children != null
-                                ? widget.children
-                                : [Container()],
+                            children:
+                                children != null ? children : [Container()],
                           ),
                         ],
                       ),
@@ -220,9 +303,8 @@ class SpoilersState extends State<Spoilers>
                           Column(
                             mainAxisSize: MainAxisSize.min,
                             crossAxisAlignment: CrossAxisAlignment.start,
-                            children: widget.children != null
-                                ? widget.children
-                                : [Container()],
+                            children:
+                                children != null ? children : [Container()],
                           ),
                         ],
                       ),
