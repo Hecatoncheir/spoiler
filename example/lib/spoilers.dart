@@ -11,17 +11,21 @@ class Example extends StatelessWidget {
     return MaterialApp(
       home: Scaffold(
         body: SafeArea(
-          child: Spoilers(
-            children: <Spoiler>[
-              Spoiler(
-                header: Text('First spoiler'),
-                child: Text('Firsdt example context'),
-              ),
-              Spoiler(
-                header: Text('Second spoiler'),
-                child: Text('Second example context'),
-              ),
-            ],
+          child: Container(
+            decoration: BoxDecoration(border: Border.all(color: Colors.blue)),
+            child: Spoilers(
+              header: Text("Spoilers example header"),
+              children: <Spoiler>[
+                Spoiler(
+                  header: Text('First spoiler'),
+                  child: Text('Firsdt example context'),
+                ),
+                Spoiler(
+                  header: Text('Second spoiler'),
+                  child: Text('Second example context'),
+                ),
+              ],
+            ),
           ),
         ),
       ),
