@@ -100,8 +100,8 @@ void main() {
           expect(spoilersDetails.headersWidth, equals([10, 10]));
           expect(spoilersDetails.headersHeight, equals([15, 15]));
 
-          expect(spoilersDetails.childsWidth, equals([20, 20]));
-          expect(spoilersDetails.childsWidth, equals([25, 25]));
+          expect(spoilersDetails.childrenWidth, equals([20, 20]));
+          expect(spoilersDetails.childrenWidth, equals([25, 25]));
 
           break;
         }

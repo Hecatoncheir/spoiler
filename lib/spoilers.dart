@@ -14,15 +14,15 @@ class SpoilersDetails {
   List<double> headersWidth;
   List<double> headersHeight;
 
-  List<double> childsWidth;
-  List<double> childsHeight;
+  List<double> childrenWidth;
+  List<double> childrenHeight;
 
   SpoilersDetails(
       {this.isOpened,
       this.headerWidth,
       this.headerHeight,
-      this.childsWidth,
-      this.childsHeight});
+      this.childrenWidth,
+      this.childrenHeight});
 }
 
 class Spoilers extends StatefulWidget {
@@ -109,15 +109,15 @@ class SpoilersState extends State<Spoilers>
             isOpened: isOpened,
             headerWidth: headerWidth,
             headerHeight: headerHeight,
-            childsWidth: [childWidth],
-            childsHeight: [childHeight])));
+            childrenWidth: [childWidth],
+            childrenHeight: [childHeight])));
 
         widget.spoilersDetails.add(SpoilersDetails(
             isOpened: isOpened,
             headerWidth: headerWidth,
             headerHeight: headerHeight,
-            childsWidth: [childWidth],
-            childsHeight: [childHeight]));
+            childrenWidth: [childWidth],
+            childrenHeight: [childHeight]));
       }
 
       isReadyController.add(true);
