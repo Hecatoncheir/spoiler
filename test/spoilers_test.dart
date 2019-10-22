@@ -12,7 +12,7 @@ void main() {
       final widget = Spoilers();
       await tester.pumpWidget(MaterialApp(home: Scaffold(body: widget)));
 
-      expect(find.byKey(Key('header')), findsOneWidget);
+      expect(find.byKey(Key('spoilers_header')), findsOneWidget);
     });
 
     testWidgets('can show custom header', (WidgetTester tester) async {
