@@ -104,7 +104,7 @@ class SpoilerState extends State<Spoiler> with SingleTickerProviderStateMixin {
             headerWidth: headerWidth,
             headerHeight: headerHeight,
             childWidth: childWidth,
-            childHeight: childHeight)));
+            childHeight: animation.value)));
 
         widget.spoilerDetails.add(SpoilerDetails(
             isOpened: isOpened,
