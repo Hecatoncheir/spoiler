@@ -164,8 +164,8 @@ class SpoilerState extends State<Spoiler> with SingleTickerProviderStateMixin {
     }
   }
 
-  final GlobalKey _headerKey = GlobalKey(debugLabel: 'header');
-  final GlobalKey _childKey = GlobalKey(debugLabel: 'child');
+  final GlobalKey _headerKey = GlobalKey(debugLabel: 'spoiler_header');
+  final GlobalKey _childKey = GlobalKey(debugLabel: 'spoiler_child');
 
   @override
   Widget build(BuildContext context) => Column(
@@ -175,7 +175,7 @@ class SpoilerState extends State<Spoiler> with SingleTickerProviderStateMixin {
           GestureDetector(
             onTap: toggle,
             child: Container(
-              key: Key('header'),
+              key: Key('spoiler_header'),
               child: Container(
                 key: _headerKey,
                 child: widget.header != null
@@ -192,7 +192,9 @@ class SpoilerState extends State<Spoiler> with SingleTickerProviderStateMixin {
                   return AnimatedBuilder(
                     animation: animation,
                     builder: (BuildContext context, Widget child) => Container(
-                      key: isOpened ? Key('child_opened') : Key('child_closed'),
+                      key: isOpened
+                          ? Key('spoiler_child_opened')
+                          : Key('spoiler_child_closed'),
                       height: animation.value > 0 ? animation.value : 0,
                       child: Wrap(
                         children: <Widget>[
@@ -203,7 +205,9 @@ class SpoilerState extends State<Spoiler> with SingleTickerProviderStateMixin {
                   );
                 } else {
                   return Container(
-                    key: isOpened ? Key('child_opened') : Key('child_closed'),
+                    key: isOpened
+                        ? Key('spoiler_child_opened')
+                        : Key('spoiler_child_closed'),
                     child: Container(
                       key: _childKey,
                       child: Wrap(

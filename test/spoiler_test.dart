@@ -11,7 +11,7 @@ void main() {
       final widget = Spoiler();
       await tester.pumpWidget(MaterialApp(home: Scaffold(body: widget)));
 
-      expect(find.byKey(Key('header')), findsOneWidget);
+      expect(find.byKey(Key('spoiler_header')), findsOneWidget);
     });
 
     testWidgets('can show custom header', (WidgetTester tester) async {
@@ -29,18 +29,18 @@ void main() {
 
       expect(state.isOpened, isFalse);
 
-      expect(find.byKey(Key('child_closed')), findsOneWidget);
-      expect(find.byKey(Key('child_opened')), findsNothing);
+      expect(find.byKey(Key('spoiler_child_closed')), findsOneWidget);
+      expect(find.byKey(Key('spoiler_child_opened')), findsNothing);
 
       expect(state.animation.value, equals(0));
 
-      await tester.tap(find.byKey(Key('header')));
+      await tester.tap(find.byKey(Key('spoiler_header')));
       await tester.pumpAndSettle();
 
       expect(state.isOpened, isTrue);
 
-      expect(find.byKey(Key('child_opened')), findsOneWidget);
-      expect(find.byKey(Key('child_closed')), findsNothing);
+      expect(find.byKey(Key('spoiler_child_opened')), findsOneWidget);
+      expect(find.byKey(Key('spoiler_child_closed')), findsNothing);
 
       expect(state.animation.value, isPositive);
 
@@ -86,7 +86,7 @@ void main() {
 
       expect(state.isOpened, isFalse);
 
-      await tester.tap(find.byKey(Key('header')));
+      await tester.tap(find.byKey(Key('spoiler_header')));
       await tester.pumpAndSettle();
 
       expect(state.isOpened, isTrue);
@@ -96,7 +96,7 @@ void main() {
       expect(details.last.childHeight, isPositive);
       expect(spoilerDetails.childHeight == details.last.childHeight, isTrue);
 
-      await tester.tap(find.byKey(Key('header')));
+      await tester.tap(find.byKey(Key('spoiler_header')));
       await tester.pumpAndSettle();
 
       expect(state.isOpened, false);
