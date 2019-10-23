@@ -30,7 +30,7 @@ void main() {
       expect(find.byKey(Key('spoiler_child_closed')), findsOneWidget);
       expect(find.byKey(Key('spoiler_child_opened')), findsNothing);
 
-      expect(state.animation.value, equals(0));
+      expect(state.childHeightAnimation.value, equals(0));
 
       await tester.tap(find.byKey(Key('spoiler_header')));
       await tester.pumpAndSettle();
@@ -40,7 +40,7 @@ void main() {
       expect(find.byKey(Key('spoiler_child_opened')), findsOneWidget);
       expect(find.byKey(Key('spoiler_child_closed')), findsNothing);
 
-      expect(state.animation.value, isPositive);
+      expect(state.childHeightAnimation.value, isPositive);
 
       expect(find.text('context'), findsOneWidget);
     });

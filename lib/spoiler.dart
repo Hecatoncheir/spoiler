@@ -61,8 +61,8 @@ class SpoilerState extends State<Spoiler> with SingleTickerProviderStateMixin {
   double childWidth;
   double childHeight;
 
-  AnimationController animationController;
-  Animation<double> animation;
+  AnimationController childHeightAnimationController;
+  Animation<double> childHeightAnimation;
 
   StreamController<bool> isReadyController = StreamController();
   Stream<bool> isReady;
@@ -82,14 +82,14 @@ class SpoilerState extends State<Spoiler> with SingleTickerProviderStateMixin {
 
     isOpen = isOpenController.stream.asBroadcastStream();
 
-    animationController = AnimationController(
+    childHeightAnimationController = AnimationController(
         duration: widget.duration != null
             ? widget.duration
             : Duration(milliseconds: 400),
         vsync: this);
 
-    animation = CurvedAnimation(
-        parent: animationController,
+    childHeightAnimation = CurvedAnimation(
+        parent: childHeightAnimationController,
         curve: widget.openCurve,
         reverseCurve: widget.closeCurve);
 
@@ -100,16 +100,17 @@ class SpoilerState extends State<Spoiler> with SingleTickerProviderStateMixin {
       childWidth = _childKey.currentContext.size.width;
       childHeight = _childKey.currentContext.size.height;
 
-      animation =
-          Tween(begin: 0.toDouble(), end: childHeight).animate(animation);
+      childHeightAnimation = Tween(begin: 0.toDouble(), end: childHeight)
+          .animate(childHeightAnimation);
 
       if (widget.onUpdateCallback != null) {
-        animation.addListener(() => widget.onUpdateCallback(SpoilerDetails(
-            isOpened: isOpened,
-            headerWidth: headerWidth,
-            headerHeight: headerHeight,
-            childWidth: childWidth,
-            childHeight: animation.value)));
+        childHeightAnimation.addListener(() => widget.onUpdateCallback(
+            SpoilerDetails(
+                isOpened: isOpened,
+                headerWidth: headerWidth,
+                headerHeight: headerHeight,
+                childWidth: childWidth,
+                childHeight: childHeightAnimation.value)));
       }
 
       if (widget.onReadyCallback != null) {
@@ -126,15 +127,16 @@ class SpoilerState extends State<Spoiler> with SingleTickerProviderStateMixin {
       try {
         if (widget.waitFirstCloseAnimationBeforeOpen) {
           isOpened
-              ? await animationController.forward().orCancel
-              : await animationController
+              ? await childHeightAnimationController.forward().orCancel
+              : await childHeightAnimationController
                   .forward()
                   .orCancel
-                  .whenComplete(() => animationController.reverse().orCancel);
+                  .whenComplete(
+                      () => childHeightAnimationController.reverse().orCancel);
         } else {
           isOpened
-              ? await animationController.forward().orCancel
-              : await animationController.reverse().orCancel;
+              ? await childHeightAnimationController.forward().orCancel
+              : await childHeightAnimationController.reverse().orCancel;
         }
       } on TickerCanceled {
         // the animation got canceled, probably because we were disposed
@@ -144,7 +146,7 @@ class SpoilerState extends State<Spoiler> with SingleTickerProviderStateMixin {
 
   @override
   void dispose() {
-    animationController.dispose();
+    childHeightAnimationController.dispose();
     isOpenController.close();
     isReadyController.close();
     super.dispose();
@@ -157,8 +159,8 @@ class SpoilerState extends State<Spoiler> with SingleTickerProviderStateMixin {
       isOpenController.add(isOpened);
 
       isOpened
-          ? await animationController.forward().orCancel
-          : await animationController.reverse().orCancel;
+          ? await childHeightAnimationController.forward().orCancel
+          : await childHeightAnimationController.reverse().orCancel;
     } on TickerCanceled {
       // the animation got canceled, probably because we were disposed
     }
@@ -190,12 +192,14 @@ class SpoilerState extends State<Spoiler> with SingleTickerProviderStateMixin {
               builder: (context, snapshot) {
                 if (snapshot.data) {
                   return AnimatedBuilder(
-                    animation: animation,
+                    animation: childHeightAnimation,
                     builder: (BuildContext context, Widget child) => Container(
                       key: isOpened
                           ? Key('spoiler_child_opened')
                           : Key('spoiler_child_closed'),
-                      height: animation.value > 0 ? animation.value : 0,
+                      height: childHeightAnimation.value > 0
+                          ? childHeightAnimation.value
+                          : 0,
                       child: Wrap(
                         children: <Widget>[
                           widget.child != null ? widget.child : Container()
