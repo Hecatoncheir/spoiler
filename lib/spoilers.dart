@@ -312,7 +312,7 @@ class SpoilersState extends State<Spoilers>
                             mainAxisSize: MainAxisSize.min,
                             crossAxisAlignment: CrossAxisAlignment.start,
                             children:
-                                children != null ? children : [Container()],
+                                children.isNotEmpty ? children : [Container()],
                           ),
                         ],
                       ),
@@ -331,7 +331,7 @@ class SpoilersState extends State<Spoilers>
                             mainAxisSize: MainAxisSize.min,
                             crossAxisAlignment: CrossAxisAlignment.start,
                             children:
-                                children != null ? children : [Container()],
+                                children.isNotEmpty ? children : [Container()],
                           ),
                         ],
                       ),
