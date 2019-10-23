@@ -32,6 +32,9 @@ class SpoilersDetails {
       this.childrenHeight});
 }
 
+typedef OnReady = Function(SpoilersDetails);
+typedef OnUpdate = Function(SpoilersDetails);
+
 class Spoilers extends StatefulWidget {
   final Widget header;
   final List<Spoiler> children;
@@ -45,7 +48,8 @@ class Spoilers extends StatefulWidget {
 
   final bool waitFirstCloseAnimationBeforeOpen;
 
-  final StreamController<SpoilersDetails> spoilersDetails;
+  final OnReady onReadyCallback;
+  final OnUpdate onUpdateCallback;
 
   const Spoilers(
       {this.header,
@@ -53,7 +57,8 @@ class Spoilers extends StatefulWidget {
       this.isOpened = false,
       this.waitFirstCloseAnimationBeforeOpen = false,
       this.duration,
-      this.spoilersDetails,
+      this.onReadyCallback,
+      this.onUpdateCallback,
       this.openCurve = Curves.easeOutExpo,
       this.closeCurve = Curves.easeInExpo});
 
@@ -80,15 +85,25 @@ class SpoilersState extends State<Spoilers>
 
   bool isOpened;
 
+  List<StreamController<SpoilerDetails>> childrenOnUpdateEvents = [];
+  List<StreamController<SpoilerDetails>> childrenOnReadyEvents = [];
   List<Spoiler> children;
 
   @override
   void initState() {
     super.initState();
 
-    children = widget.children == null
-        ? []
-        : createChildrenDetailsControllers(widget.children);
+    children =
+        createChildrenCallbacks(widget.children == null ? [] : widget.children);
+
+    /// child - need to know whose events.
+    for (Spoiler child in children) {
+      // ignore: close_sinks
+      final childrenUpdateEvents =
+          childrenOnUpdateEvents[children.indexOf(child)];
+
+      childrenUpdateEvents.stream.listen((details) => print(details.isOpened));
+    }
 
     isOpened = widget.isOpened;
 
@@ -111,13 +126,11 @@ class SpoilersState extends State<Spoilers>
 
     final spoilersDetailsQueue =
         Iterable<Future>.generate(children.length, (index) async {
-      final spoiler = children[index];
+      // ignore: close_sinks
+      final spoilerReadyEvents = childrenOnReadyEvents[index];
 
-      await for (SpoilerDetails details
-          in spoiler.spoilerDetails.stream.asBroadcastStream()) {
-        spoilersDetails.add(details);
-        break;
-      }
+      final details = await spoilerReadyEvents.stream.first;
+      spoilersDetails.add(details);
     });
 
     SchedulerBinding.instance.addPostFrameCallback((_) async {
@@ -134,10 +147,6 @@ class SpoilersState extends State<Spoilers>
         await Future.wait(spoilersDetailsQueue);
       }
 
-//      children.forEach((spoiler) => spoiler.spoilerDetails.stream
-//          .asBroadcastStream()
-//          .listen((details) => print(details.isOpened)));
-
       final headersWidth = <double>[];
       final headersHeight = <double>[];
 
@@ -152,27 +161,31 @@ class SpoilersState extends State<Spoilers>
         childrenHeight.add(details.childHeight);
       }
 
-      animation.addListener(() => widget?.spoilersDetails?.add(SpoilersDetails(
-          isOpened: isOpened,
-          headerWidth: headerWidth,
-          headerHeight: headerHeight,
-          headersWidth: headersWidth,
-          headersHeight: headersHeight,
-          childWidth: childWidth,
-          childHeight: childHeight,
-          childrenWidth: childrenWidth,
-          childrenHeight: childrenHeight)));
+      if (widget.onUpdateCallback != null) {
+        animation.addListener(() => widget.onUpdateCallback(SpoilersDetails(
+            isOpened: isOpened,
+            headerWidth: headerWidth,
+            headerHeight: headerHeight,
+            headersWidth: headersWidth,
+            headersHeight: headersHeight,
+            childWidth: childWidth,
+            childHeight: animation.value,
+            childrenWidth: childrenWidth,
+            childrenHeight: childrenHeight)));
+      }
 
-      widget?.spoilersDetails?.add(SpoilersDetails(
-          isOpened: isOpened,
-          headerWidth: headerWidth,
-          headerHeight: headerHeight,
-          headersWidth: headersWidth,
-          headersHeight: headersHeight,
-          childWidth: childWidth,
-          childHeight: childHeight,
-          childrenWidth: childrenWidth,
-          childrenHeight: childrenHeight));
+      if (widget.onReadyCallback != null) {
+        widget.onReadyCallback(SpoilersDetails(
+            isOpened: isOpened,
+            headerWidth: headerWidth,
+            headerHeight: headerHeight,
+            headersWidth: headersWidth,
+            headersHeight: headersHeight,
+            childWidth: childWidth,
+            childHeight: childHeight,
+            childrenWidth: childrenWidth,
+            childrenHeight: childrenHeight));
+      }
 
       isReadyController.add(true);
 
@@ -200,34 +213,44 @@ class SpoilersState extends State<Spoilers>
     animationController.dispose();
     isOpenController.close();
     isReadyController.close();
-    children.forEach((spoiler) => spoiler.spoilerDetails.close());
+    childrenOnReadyEvents.forEach((controller) => controller.close());
+    childrenOnUpdateEvents.forEach((controller) => controller.close());
     super.dispose();
   }
 
-  List<Spoiler> createChildrenDetailsControllers(List<Spoiler> spoilers) {
+  List<Spoiler> createChildrenCallbacks(List<Spoiler> spoilers) {
     final spoilersWithDetailsControllers = <Spoiler>[];
 
     for (Spoiler spoiler in spoilers) {
-      if (spoiler.spoilerDetails != null) {
-        spoilersWithDetailsControllers.add(spoiler);
-      } else {
-        // ignore: close_sinks
-        final detailsController = StreamController<SpoilerDetails>();
+      final detailsReadyController = StreamController<SpoilerDetails>();
+      final detailsUpdateController = StreamController<SpoilerDetails>();
 
-        final updatedSpoiler = Spoiler(
-          spoilerDetails: detailsController,
-          header: spoiler.header,
-          child: spoiler.child,
-          duration: spoiler.duration,
-          isOpened: spoiler.isOpened,
-          openCurve: spoiler.openCurve,
-          closeCurve: spoiler.closeCurve,
-          waitFirstCloseAnimationBeforeOpen:
-              spoiler.waitFirstCloseAnimationBeforeOpen,
-        );
+      final updatedSpoiler = Spoiler(
+        onReadyCallback: (details) {
+          if (spoiler.onReadyCallback != null) spoiler.onReadyCallback(details);
+          detailsReadyController.add(details);
+        },
+        onUpdateCallback: (details) {
+          if (spoiler.onUpdateCallback != null) {
+            spoiler.onUpdateCallback(details);
+          }
 
-        spoilersWithDetailsControllers.add(updatedSpoiler);
-      }
+          detailsUpdateController.add(details);
+        },
+        header: spoiler.header,
+        child: spoiler.child,
+        duration: spoiler.duration,
+        isOpened: spoiler.isOpened,
+        openCurve: spoiler.openCurve,
+        closeCurve: spoiler.closeCurve,
+        waitFirstCloseAnimationBeforeOpen:
+            spoiler.waitFirstCloseAnimationBeforeOpen,
+      );
+
+      childrenOnReadyEvents.add(detailsReadyController);
+      childrenOnUpdateEvents.add(detailsUpdateController);
+
+      spoilersWithDetailsControllers.add(updatedSpoiler);
     }
 
     return spoilersWithDetailsControllers;
