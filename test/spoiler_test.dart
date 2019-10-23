@@ -50,8 +50,6 @@ void main() {
 
   group('Spoiler wiget callbacks', () {
     testWidgets('can be invoked when widgets ready', (tester) async {
-      final details = StreamController<SpoilerDetails>();
-
       SpoilerDetails spoilerDetails;
 
       final widget = Spoiler(
@@ -67,8 +65,6 @@ void main() {
 
       expect(spoilerDetails.childWidth, equals(20));
       expect(spoilerDetails.childHeight, equals(25));
-
-      details.close();
     });
 
     testWidgets('can be sended when widgets toggle and height or width change',
