@@ -74,8 +74,8 @@ class SpoilersState extends State<Spoilers>
   double childWidth;
   double childHeight;
 
-  AnimationController animationController;
-  Animation<double> animation;
+  AnimationController childHeightAnimationController;
+  Animation<double> childHeightAnimation;
 
   StreamController<bool> isReadyController = StreamController();
   Stream<bool> isReady;
@@ -111,14 +111,14 @@ class SpoilersState extends State<Spoilers>
 
     isOpen = isOpenController.stream.asBroadcastStream();
 
-    animationController = AnimationController(
+    childHeightAnimationController = AnimationController(
         duration: widget.duration != null
             ? widget.duration
             : Duration(milliseconds: 400),
         vsync: this);
 
-    animation = CurvedAnimation(
-        parent: animationController,
+    childHeightAnimation = CurvedAnimation(
+        parent: childHeightAnimationController,
         curve: widget.openCurve,
         reverseCurve: widget.closeCurve);
 
@@ -140,8 +140,8 @@ class SpoilersState extends State<Spoilers>
       childWidth = _childKey.currentContext.size.width;
       childHeight = _childKey.currentContext.size.height;
 
-      animation =
-          Tween(begin: 0.toDouble(), end: childHeight).animate(animation);
+      childHeightAnimation = Tween(begin: 0.toDouble(), end: childHeight)
+          .animate(childHeightAnimation);
 
       if (spoilersDetailsQueue.isNotEmpty) {
         await Future.wait(spoilersDetailsQueue);
@@ -162,16 +162,17 @@ class SpoilersState extends State<Spoilers>
       }
 
       if (widget.onUpdateCallback != null) {
-        animation.addListener(() => widget.onUpdateCallback(SpoilersDetails(
-            isOpened: isOpened,
-            headerWidth: headerWidth,
-            headerHeight: headerHeight,
-            headersWidth: headersWidth,
-            headersHeight: headersHeight,
-            childWidth: childWidth,
-            childHeight: animation.value,
-            childrenWidth: childrenWidth,
-            childrenHeight: childrenHeight)));
+        childHeightAnimation.addListener(() => widget.onUpdateCallback(
+            SpoilersDetails(
+                isOpened: isOpened,
+                headerWidth: headerWidth,
+                headerHeight: headerHeight,
+                headersWidth: headersWidth,
+                headersHeight: headersHeight,
+                childWidth: childWidth,
+                childHeight: childHeightAnimation.value,
+                childrenWidth: childrenWidth,
+                childrenHeight: childrenHeight)));
       }
 
       if (widget.onReadyCallback != null) {
@@ -192,15 +193,16 @@ class SpoilersState extends State<Spoilers>
       try {
         if (widget.waitFirstCloseAnimationBeforeOpen) {
           isOpened
-              ? await animationController.forward().orCancel
-              : await animationController
+              ? await childHeightAnimationController.forward().orCancel
+              : await childHeightAnimationController
                   .forward()
                   .orCancel
-                  .whenComplete(() => animationController.reverse().orCancel);
+                  .whenComplete(
+                      () => childHeightAnimationController.reverse().orCancel);
         } else {
           isOpened
-              ? await animationController.forward().orCancel
-              : await animationController.reverse().orCancel;
+              ? await childHeightAnimationController.forward().orCancel
+              : await childHeightAnimationController.reverse().orCancel;
         }
       } on TickerCanceled {
         // the animation got canceled, probably because we were disposed
@@ -210,7 +212,7 @@ class SpoilersState extends State<Spoilers>
 
   @override
   void dispose() {
-    animationController.dispose();
+    childHeightAnimationController.dispose();
     isOpenController.close();
     isReadyController.close();
     childrenOnReadyEvents.forEach((controller) => controller.close());
@@ -263,8 +265,8 @@ class SpoilersState extends State<Spoilers>
       isOpenController.add(isOpened);
 
       isOpened
-          ? await animationController.forward().orCancel
-          : await animationController.reverse().orCancel;
+          ? await childHeightAnimationController.forward().orCancel
+          : await childHeightAnimationController.reverse().orCancel;
     } on TickerCanceled {
       // the animation got canceled, probably because we were disposed
     }
@@ -296,12 +298,14 @@ class SpoilersState extends State<Spoilers>
               builder: (context, snapshot) {
                 if (snapshot.data) {
                   return AnimatedBuilder(
-                    animation: animation,
+                    animation: childHeightAnimation,
                     builder: (BuildContext context, Widget child) => Container(
                       key: isOpened
                           ? Key('spoilers_child_opened')
                           : Key('spoilers_child_closed'),
-                      height: animation.value > 0 ? animation.value : 0,
+                      height: childHeightAnimation.value > 0
+                          ? childHeightAnimation.value
+                          : 0,
                       child: Wrap(
                         children: <Widget>[
                           Column(
