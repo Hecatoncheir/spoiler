@@ -20,6 +20,9 @@ class SpoilerDetails {
       this.childHeight});
 }
 
+typedef OnReady = Function(SpoilerDetails);
+typedef OnUpdate = Function(SpoilerDetails);
+
 class Spoiler extends StatefulWidget {
   final Widget header;
   final Widget child;
@@ -33,7 +36,8 @@ class Spoiler extends StatefulWidget {
 
   final bool waitFirstCloseAnimationBeforeOpen;
 
-  final StreamController<SpoilerDetails> spoilerDetails;
+  final OnReady onReadyCallback;
+  final OnUpdate onUpdateCallback;
 
   const Spoiler(
       {this.header,
@@ -41,7 +45,8 @@ class Spoiler extends StatefulWidget {
       this.isOpened = false,
       this.waitFirstCloseAnimationBeforeOpen = false,
       this.duration,
-      this.spoilerDetails,
+      this.onReadyCallback,
+      this.onUpdateCallback,
       this.openCurve = Curves.easeOutExpo,
       this.closeCurve = Curves.easeInExpo});
 
@@ -98,15 +103,17 @@ class SpoilerState extends State<Spoiler> with SingleTickerProviderStateMixin {
       animation =
           Tween(begin: 0.toDouble(), end: childHeight).animate(animation);
 
-      if (widget.spoilerDetails != null) {
-        animation.addListener(() => widget.spoilerDetails.add(SpoilerDetails(
+      if (widget.onUpdateCallback != null) {
+        animation.addListener(() => widget.onUpdateCallback(SpoilerDetails(
             isOpened: isOpened,
             headerWidth: headerWidth,
             headerHeight: headerHeight,
             childWidth: childWidth,
             childHeight: animation.value)));
+      }
 
-        widget.spoilerDetails.add(SpoilerDetails(
+      if (widget.onReadyCallback != null) {
+        widget.onReadyCallback(SpoilerDetails(
             isOpened: isOpened,
             headerWidth: headerWidth,
             headerHeight: headerHeight,

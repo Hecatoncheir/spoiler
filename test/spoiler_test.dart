@@ -48,31 +48,65 @@ void main() {
     });
   });
 
-  group('Spoiler wiget details', () {
-    testWidgets('can be sended when widgets ready', (tester) async {
+  group('Spoiler wiget callbacks', () {
+    testWidgets('can be invoked when widgets ready', (tester) async {
       final details = StreamController<SpoilerDetails>();
 
+      SpoilerDetails spoilerDetails;
+
       final widget = Spoiler(
-          spoilerDetails: details,
+          onReadyCallback: (details) => spoilerDetails = details,
           header: SizedBox(width: 10, height: 15),
           child: SizedBox(width: 20, height: 25));
 
       await tester.pumpWidget(MaterialApp(home: Scaffold(body: widget)));
       await tester.pumpAndSettle();
 
-      await tester.runAsync(() async {
-        await for (SpoilerDetails spoilerDetails in details.stream) {
-          expect(spoilerDetails.headerWidth, equals(10));
-          expect(spoilerDetails.headerHeight, equals(15));
+      expect(spoilerDetails.headerWidth, equals(10));
+      expect(spoilerDetails.headerHeight, equals(15));
 
-          expect(spoilerDetails.childWidth, equals(20));
-          expect(spoilerDetails.childHeight, equals(25));
-
-          break;
-        }
-      });
+      expect(spoilerDetails.childWidth, equals(20));
+      expect(spoilerDetails.childHeight, equals(25));
 
       details.close();
+    });
+
+    testWidgets('can be sended when widgets toggle and height or width change',
+        (tester) async {
+      SpoilerDetails spoilerDetails;
+      List<SpoilerDetails> details = [];
+
+      final widget = Spoiler(
+        child: Text('context'),
+        onReadyCallback: (details) => spoilerDetails = details,
+        onUpdateCallback: (updatedDetails) => details.add(updatedDetails),
+      );
+
+      await tester.pumpWidget(MaterialApp(home: Scaffold(body: widget)));
+      final SpoilerState state = tester.state(find.byWidget(widget));
+
+      expect(spoilerDetails, isNotNull);
+      expect(spoilerDetails.isOpened, isFalse);
+
+      expect(state.isOpened, isFalse);
+
+      await tester.tap(find.byKey(Key('header')));
+      await tester.pumpAndSettle();
+
+      expect(state.isOpened, isTrue);
+
+      expect(details, isNotEmpty);
+      expect(details.last.isOpened, isTrue);
+      expect(details.last.childHeight, isPositive);
+      expect(spoilerDetails.childHeight == details.last.childHeight, isTrue);
+
+      await tester.tap(find.byKey(Key('header')));
+      await tester.pumpAndSettle();
+
+      expect(state.isOpened, false);
+
+      expect(spoilerDetails.childHeight == details.last.childHeight, isFalse);
+      expect(details.last.childHeight, equals(0));
     });
   });
 }

@@ -11,6 +11,7 @@ class Example extends StatelessWidget {
       home: Scaffold(
         body: SafeArea(
           child: Spoiler(
+            onUpdateCallback: (d) => print(d.childHeight),
             child: Text('Example context'),
           ),
         ),
