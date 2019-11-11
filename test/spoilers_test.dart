@@ -151,13 +151,14 @@ void main() {
       expect(spoilersDetails.headersWidth, equals([10, 10]));
       expect(spoilersDetails.headersHeight, equals([15, 15]));
 
-      expect(spoilersDetails.childrenWidth, equals([]));
-      expect(spoilersDetails.childrenHeight, equals([]));
+      expect(spoilersDetails.childrenWidth, equals([0, 0]));
+      expect(spoilersDetails.childrenHeight, equals([0, 0]));
     });
 
     testWidgets('can be sended when widgets toggle and height or width change',
         (tester) async {
       final firstSpoiler = Spoiler(
+          isOpened: true,
           header: SizedBox(
             width: 10,
             height: 15,
@@ -170,6 +171,7 @@ void main() {
           ));
 
       final secondSpoiler = Spoiler(
+          isOpened: true,
           header: SizedBox(
             width: 10,
             height: 15,

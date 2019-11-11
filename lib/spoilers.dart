@@ -158,6 +158,9 @@ class SpoilersState extends State<Spoilers>
         if (details.isOpened) {
           spoilersChildrenWidth.add(details.childWidth);
           spoilersChildrenHeight.add(details.childHeight);
+        } else {
+          spoilersChildrenWidth.add(0);
+          spoilersChildrenHeight.add(0);
         }
       }
 
