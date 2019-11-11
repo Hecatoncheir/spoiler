@@ -216,9 +216,7 @@ class SpoilersState extends State<Spoilers>
     try {
       if (widget.waitFirstCloseAnimationBeforeOpen) {
         if (isOpened) {
-          await childHeightAnimationController
-              .forward(from: spoilersHeight)
-              .orCancel;
+          await childHeightAnimationController.forward().orCancel;
         } else {
           await childHeightAnimationController.forward().orCancel.whenComplete(
               () => childHeightAnimationController.reverse().orCancel);
