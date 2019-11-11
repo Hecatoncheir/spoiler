@@ -110,6 +110,7 @@ class SpoilersState extends State<Spoilers>
       final childrenUpdateEvents = childrenOnUpdateEvents[indexOfSpoilerChild];
 
       childrenUpdateEvents.stream.listen((details) {
+        spoilersChildrenHeight[indexOfSpoilerChild] = details.childHeight;
         print('$indexOfSpoilerChild: isOpened:${details.isOpened}');
       });
     }
@@ -195,6 +196,15 @@ class SpoilersState extends State<Spoilers>
           childrenWidth: spoilersChildrenWidth,
           childrenHeight: spoilersChildrenHeight));
     }
+  }
+
+  double getSpoilersHeight() {
+    double spoilersHeight = 0;
+    spoilersHeight +=
+        spoilersHeadersHeight.fold(0, (first, second) => first + second);
+    spoilersHeight +=
+        spoilersChildrenHeight.fold(0, (first, second) => first + second);
+    return spoilersHeight;
   }
 
   Future<void> prepareAnimation() async {
