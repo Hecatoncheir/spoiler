@@ -63,6 +63,7 @@ void main() {
   group('Spoilers wiget callbacks', () {
     testWidgets('can be invoked when widgets ready', (tester) async {
       final firstSpoiler = Spoiler(
+          isOpened: true,
           header: SizedBox(
             width: 10,
             height: 15,
@@ -75,6 +76,7 @@ void main() {
           ));
 
       final secondSpoiler = Spoiler(
+          isOpened: true,
           header: SizedBox(
             width: 10,
             height: 15,
@@ -104,6 +106,53 @@ void main() {
 
       expect(spoilersDetails.childrenWidth, equals([20, 20]));
       expect(spoilersDetails.childrenHeight, equals([25, 25]));
+    });
+
+    testWidgets('can be invoked when widgets ready', (tester) async {
+      final firstSpoiler = Spoiler(
+          isOpened: false,
+          header: SizedBox(
+            width: 10,
+            height: 15,
+            child: Text('first spoiler header'),
+          ),
+          child: SizedBox(
+            width: 20,
+            height: 25,
+            child: Text('first spoiler content'),
+          ));
+
+      final secondSpoiler = Spoiler(
+          isOpened: false,
+          header: SizedBox(
+            width: 10,
+            height: 15,
+            child: Text('second spoiler header'),
+          ),
+          child: SizedBox(
+            width: 20,
+            height: 25,
+            child: Text('second spoiler content'),
+          ));
+
+      SpoilersDetails spoilersDetails;
+
+      final widget = Spoilers(
+          onReadyCallback: (details) => spoilersDetails = details,
+          header: SizedBox(width: 10, height: 15),
+          children: [firstSpoiler, secondSpoiler]);
+
+      await tester.pumpWidget(MaterialApp(home: Scaffold(body: widget)));
+      await tester.pumpAndSettle();
+
+      expect(spoilersDetails.headerWidth, equals(10));
+      expect(spoilersDetails.headerHeight, equals(15));
+
+      expect(spoilersDetails.headersWidth, equals([10, 10]));
+      expect(spoilersDetails.headersHeight, equals([15, 15]));
+
+      expect(spoilersDetails.childrenWidth, equals([]));
+      expect(spoilersDetails.childrenHeight, equals([]));
     });
 
     testWidgets('can be sended when widgets toggle and height or width change',

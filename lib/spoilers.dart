@@ -74,6 +74,12 @@ class SpoilersState extends State<Spoilers>
   double childWidth;
   double childHeight;
 
+  final spoilersHeadersWidth = <double>[];
+  final spoilersHeadersHeight = <double>[];
+
+  final spoilersChildrenWidth = <double>[];
+  final spoilersChildrenHeight = <double>[];
+
   AnimationController childHeightAnimationController;
   Animation<double> childHeightAnimation;
 
@@ -98,17 +104,18 @@ class SpoilersState extends State<Spoilers>
 
     /// child - need to know whose events.
     for (Spoiler child in children) {
-      // ignore: close_sinks
-      final childrenUpdateEvents =
-          childrenOnUpdateEvents[children.indexOf(child)];
+      final indexOfSpoilerChild = children.indexOf(child);
 
-      childrenUpdateEvents.stream.listen((details) => print(details.isOpened));
+      // ignore: close_sinks
+      final childrenUpdateEvents = childrenOnUpdateEvents[indexOfSpoilerChild];
+
+      childrenUpdateEvents.stream.listen((details) {
+        print('$indexOfSpoilerChild: isOpened:${details.isOpened}');
+      });
     }
 
     isOpened = widget.isOpened;
-
     isReady = isReadyController.stream.asBroadcastStream();
-
     isOpen = isOpenController.stream.asBroadcastStream();
 
     childHeightAnimationController = AnimationController(
@@ -140,74 +147,89 @@ class SpoilersState extends State<Spoilers>
       childWidth = _childKey.currentContext.size.width;
       childHeight = _childKey.currentContext.size.height;
 
-      childHeightAnimation = Tween(begin: 0.toDouble(), end: childHeight)
-          .animate(childHeightAnimation);
-
       if (spoilersDetailsQueue.isNotEmpty) {
         await Future.wait(spoilersDetailsQueue);
       }
 
-      final headersWidth = <double>[];
-      final headersHeight = <double>[];
-
-      final childrenWidth = <double>[];
-      final childrenHeight = <double>[];
-
       for (SpoilerDetails details in spoilersDetails) {
-        headersWidth.add(details.headerWidth);
-        headersHeight.add(details.headerHeight);
+        spoilersHeadersWidth.add(details.headerWidth);
+        spoilersHeadersHeight.add(details.headerHeight);
 
-        childrenWidth.add(details.childWidth);
-        childrenHeight.add(details.childHeight);
-      }
-
-      if (widget.onUpdateCallback != null) {
-        childHeightAnimation.addListener(() => widget.onUpdateCallback(
-            SpoilersDetails(
-                isOpened: isOpened,
-                headerWidth: headerWidth,
-                headerHeight: headerHeight,
-                headersWidth: headersWidth,
-                headersHeight: headersHeight,
-                childWidth: childWidth,
-                childHeight: childHeightAnimation.value,
-                childrenWidth: childrenWidth,
-                childrenHeight: childrenHeight)));
-      }
-
-      if (widget.onReadyCallback != null) {
-        widget.onReadyCallback(SpoilersDetails(
-            isOpened: isOpened,
-            headerWidth: headerWidth,
-            headerHeight: headerHeight,
-            headersWidth: headersWidth,
-            headersHeight: headersHeight,
-            childWidth: childWidth,
-            childHeight: childHeight,
-            childrenWidth: childrenWidth,
-            childrenHeight: childrenHeight));
-      }
-
-      isReadyController.add(true);
-
-      try {
-        if (widget.waitFirstCloseAnimationBeforeOpen) {
-          isOpened
-              ? await childHeightAnimationController.forward().orCancel
-              : await childHeightAnimationController
-                  .forward()
-                  .orCancel
-                  .whenComplete(
-                      () => childHeightAnimationController.reverse().orCancel);
-        } else {
-          isOpened
-              ? await childHeightAnimationController.forward().orCancel
-              : await childHeightAnimationController.reverse().orCancel;
+        if (details.isOpened) {
+          spoilersChildrenWidth.add(details.childWidth);
+          spoilersChildrenHeight.add(details.childHeight);
         }
-      } on TickerCanceled {
-        // the animation got canceled, probably because we were disposed
       }
+
+      prepareAnimation().then((_) => updateCallbacks());
     });
+  }
+
+  void updateCallbacks() {
+    if (widget.onUpdateCallback != null) {
+      childHeightAnimation.addListener(() => widget.onUpdateCallback(
+          SpoilersDetails(
+              isOpened: isOpened,
+              headerWidth: headerWidth,
+              headerHeight: headerHeight,
+              headersWidth: spoilersHeadersWidth,
+              headersHeight: spoilersHeadersHeight,
+              childWidth: childWidth,
+              childHeight: childHeightAnimation.value,
+              childrenWidth: spoilersChildrenWidth,
+              childrenHeight: spoilersChildrenHeight)));
+    }
+
+    if (widget.onReadyCallback != null) {
+      widget.onReadyCallback(SpoilersDetails(
+          isOpened: isOpened,
+          headerWidth: headerWidth,
+          headerHeight: headerHeight,
+          headersWidth: spoilersHeadersWidth,
+          headersHeight: spoilersHeadersHeight,
+          childWidth: childWidth,
+          childHeight: childHeight,
+          childrenWidth: spoilersChildrenWidth,
+          childrenHeight: spoilersChildrenHeight));
+    }
+  }
+
+  Future<void> prepareAnimation() async {
+    isReadyController.add(true);
+
+    double spoilersHeight = 0;
+
+    for (double height in spoilersHeadersHeight) {
+      spoilersHeight += height;
+    }
+
+    for (double height in spoilersChildrenHeight) {
+      spoilersHeight += height;
+    }
+
+    childHeightAnimation = Tween(begin: 0.toDouble(), end: childHeight)
+        .animate(childHeightAnimation);
+
+    try {
+      if (widget.waitFirstCloseAnimationBeforeOpen) {
+        if (isOpened) {
+          await childHeightAnimationController
+              .forward(from: spoilersHeight)
+              .orCancel;
+        } else {
+          await childHeightAnimationController.forward().orCancel.whenComplete(
+              () => childHeightAnimationController.reverse().orCancel);
+        }
+      } else {
+        if (isOpened) {
+          await childHeightAnimationController.forward().orCancel;
+        } else {
+          await childHeightAnimationController.reverse().orCancel;
+        }
+      }
+    } on TickerCanceled {
+      // the animation got canceled, probably because we were disposed
+    }
   }
 
   @override
