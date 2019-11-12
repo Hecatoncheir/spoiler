@@ -12,14 +12,34 @@ child: Spoiler(
             child: GameControl()
 ```
 
+```dart
+child: Spoilers(
+              onUpdateCallback: (s) {
+                print(s.childHeight);
+                print(s.isOpened);
+              },
+              header: Text("Spoilers example header"),
+              children: <Spoiler>[
+                Spoiler(
+                  header: Text('First spoiler'),
+                  child: Text('Firsdt example context'),
+                ),
+                Spoiler(
+                  header: Text('Second spoiler'),
+                  child: Text('Second example context'),
+                ),
+              ],
+            )
+```
+
 ![Spoiler preview gif](/preview/preview.gif)
 
 ## TODO:
  - [x] Custom header. 
  - [ ] Custom open header and custom close header.
- - [ ] On open callback with header height and child height arguments.
- - [ ] On close callback with header height and child height arguments.
- - [ ] Get only header height for spoiler in spoiler widgets.
- - [ ] Make Spoilers widget with calback that has all headers height and  all childs height.
+ - [x] On open callback with header height and child height arguments.
+ - [x] On close callback with header height and child height arguments.
+ - [x] Get only header height for spoiler in spoiler widgets.
+ - [x] Make Spoilers widget with callback that has all headers height and  all child height.
  - [ ] Add `reverse` parameter for change order of header and child.
  - [ ] Add horizontal spoiler widget.
