@@ -5,13 +5,26 @@ import 'package:flutter/widgets.dart';
 
 import 'spoiler.dart';
 
+class SpoilerData {
+  // ignore: close_sinks
+  StreamController<SpoilerDetails> updateEvents;
+  // ignore: close_sinks
+  StreamController<SpoilerDetails> readyEvents;
+  SpoilerDetails details;
+
+  bool isOpened;
+
+  SpoilerData(
+      {this.updateEvents, this.readyEvents, this.details, this.isOpened});
+}
+
 class SpoilersDetails {
   bool isOpened;
 
   double headerWidth;
   double headerHeight;
 
-  List<Map<String, dynamic>> spoilersDetails;
+  List<SpoilerData> spoilersDetails;
 
   double childWidth;
   double childHeight;
@@ -67,7 +80,7 @@ class SpoilersState extends State<Spoilers> with TickerProviderStateMixin {
   double childHeight = 0;
 
   final List<Spoiler> children = [];
-  final List<Map<String, dynamic>> spoilersDetails = [];
+  final List<SpoilerData> spoilersChildrenData = [];
 
   AnimationController childHeightAnimationController;
   Animation<double> childHeightAnimation;
@@ -87,7 +100,7 @@ class SpoilersState extends State<Spoilers> with TickerProviderStateMixin {
     isOpened = widget.isOpened;
 
     prepareSpoilersAndDetails(widget.children == null ? [] : widget.children);
-    subscribeOnChildrenEvents(spoilersDetails);
+    subscribeOnChildrenEvents(spoilersChildrenData);
 
     isReady = isReadyController.stream.asBroadcastStream();
     isOpen = isOpenController.stream.asBroadcastStream();
@@ -120,10 +133,12 @@ class SpoilersState extends State<Spoilers> with TickerProviderStateMixin {
     final spoilersSize = <SpoilerDetails>[];
 
     final spoilersDetailsQueue =
-        Iterable<Future>.generate(spoilersDetails.length, (index) async {
-      final details = await spoilersDetails[index]['detailsReady'].stream.first;
+        Iterable<Future>.generate(spoilersChildrenData.length, (index) async {
+      final details =
+          await spoilersChildrenData[index].readyEvents.stream.first;
+
       spoilersSize.add(details);
-      spoilersDetails[index]['details'] = details;
+      spoilersChildrenData[index].details = details;
     });
 
     if (spoilersDetailsQueue.isNotEmpty) {
@@ -132,7 +147,7 @@ class SpoilersState extends State<Spoilers> with TickerProviderStateMixin {
 
     for (SpoilerDetails details in spoilersSize) {
       final spoilerIndex = spoilersSize.indexOf(details);
-      final spoilerDetails = spoilersDetails[spoilerIndex]['details'];
+      final spoilerDetails = spoilersChildrenData[spoilerIndex].details;
 
       spoilerDetails.headerWidth = details.headerWidth;
       spoilerDetails.headerHeight = details.headerHeight;
@@ -142,13 +157,13 @@ class SpoilersState extends State<Spoilers> with TickerProviderStateMixin {
     }
   }
 
-  void subscribeOnChildrenEvents(List<Map<String, dynamic>> spoilersDetails) {
-    for (Map<String, dynamic> spoilerDetails in spoilersDetails) {
+  void subscribeOnChildrenEvents(List<SpoilerData> spoilersData) {
+    for (SpoilerData spoilerData in spoilersData) {
       // ignore: close_sinks
-      final childrenUpdateEvents = spoilerDetails['detailsUpdate'];
+      final childrenUpdateEvents = spoilerData.updateEvents;
 
       childrenUpdateEvents.stream.listen((details) {
-        spoilerDetails['details'] = details;
+        spoilerData.details = details;
 
         final spoilersHeight =
             getSpoilersHeaderHeight() + getSpoilersChildHeight();
@@ -170,7 +185,7 @@ class SpoilersState extends State<Spoilers> with TickerProviderStateMixin {
               headerHeight: headerHeight,
               childWidth: childWidth,
               childHeight: childHeightAnimation.value,
-              spoilersDetails: spoilersDetails)));
+              spoilersDetails: spoilersChildrenData)));
     }
 
     if (widget.onReadyCallback != null) {
@@ -180,7 +195,7 @@ class SpoilersState extends State<Spoilers> with TickerProviderStateMixin {
           headerHeight: headerHeight,
           childWidth: childWidth,
           childHeight: childHeight,
-          spoilersDetails: spoilersDetails));
+          spoilersDetails: spoilersChildrenData));
     }
   }
 
@@ -203,9 +218,9 @@ class SpoilersState extends State<Spoilers> with TickerProviderStateMixin {
     isOpenController.close();
     isReadyController.close();
 
-    for (Map<String, dynamic> details in spoilersDetails) {
-      details['detailsReady'].close();
-      details['detailsUpdate'].close();
+    for (SpoilerData data in spoilersChildrenData) {
+      data.readyEvents.close();
+      data.updateEvents.close();
     }
 
     super.dispose();
@@ -218,11 +233,12 @@ class SpoilersState extends State<Spoilers> with TickerProviderStateMixin {
       // ignore: close_sinks
       final detailsUpdateController = StreamController<SpoilerDetails>();
 
-      spoilersDetails.add({
-        'detailsReady': detailsReadyController,
-        'detailsUpdate': detailsUpdateController,
-        'isOpened': spoiler.isOpened
-      });
+      final data = SpoilerData(
+          readyEvents: detailsReadyController,
+          updateEvents: detailsUpdateController,
+          isOpened: spoiler.isOpened);
+
+      spoilersChildrenData.add(data);
 
       final updatedSpoiler = Spoiler(
         onReadyCallback: (details) {
@@ -275,8 +291,8 @@ class SpoilersState extends State<Spoilers> with TickerProviderStateMixin {
   double getSpoilersHeaderHeight() {
     double height = 0.0;
 
-    for (Map<String, dynamic> details in spoilersDetails) {
-      height += details['details'].headerHeight;
+    for (SpoilerData data in spoilersChildrenData) {
+      height += data.details.headerHeight;
     }
 
     return height.toDouble();
@@ -285,8 +301,8 @@ class SpoilersState extends State<Spoilers> with TickerProviderStateMixin {
   double getSpoilersHeaderWidth() {
     double width = 0.0;
 
-    for (Map<String, dynamic> details in spoilersDetails) {
-      width += details['details'].headerWidth;
+    for (SpoilerData data in spoilersChildrenData) {
+      width += data.details.headerWidth;
     }
 
     return width.toDouble();
@@ -295,8 +311,8 @@ class SpoilersState extends State<Spoilers> with TickerProviderStateMixin {
   double getSpoilersChildHeight() {
     double height = 0.0;
 
-    for (Map<String, dynamic> details in spoilersDetails) {
-      height += details['details'].childHeight;
+    for (SpoilerData data in spoilersChildrenData) {
+      height += data.details.childHeight;
     }
 
     return height.toDouble();

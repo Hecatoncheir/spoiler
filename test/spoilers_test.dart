@@ -103,8 +103,7 @@ void main() {
       expect(spoilersDetails.headerWidth, equals(10));
       expect(spoilersDetails.headerHeight, equals(15));
 
-      final firstSpoilerDetails =
-          spoilersDetails.spoilersDetails.first['details'];
+      final firstSpoilerDetails = spoilersDetails.spoilersDetails.first.details;
 
       expect(firstSpoilerDetails.headerWidth, equals(10));
       expect(firstSpoilerDetails.headerHeight, equals(15));
@@ -112,8 +111,7 @@ void main() {
       /// Zero because spoiler is not opened (closed) by Spoilers widget.
       expect(firstSpoilerDetails.childHeight, equals(0.0));
 
-      final secondSpoilerDetails =
-          spoilersDetails.spoilersDetails.last['details'];
+      final secondSpoilerDetails = spoilersDetails.spoilersDetails.last.details;
 
       expect(secondSpoilerDetails.headerWidth, equals(10));
       expect(secondSpoilerDetails.headerHeight, equals(15));
@@ -162,8 +160,7 @@ void main() {
       expect(spoilersDetails.headerWidth, equals(10));
       expect(spoilersDetails.headerHeight, equals(15));
 
-      final firstSpoilerDetails =
-          spoilersDetails.spoilersDetails.first['details'];
+      final firstSpoilerDetails = spoilersDetails.spoilersDetails.first.details;
 
       expect(firstSpoilerDetails.headerWidth, equals(10));
       expect(firstSpoilerDetails.headerHeight, equals(15));
@@ -171,8 +168,7 @@ void main() {
       /// Zero because spoiler is not opened (closed) by Spoilers widget.
       expect(firstSpoilerDetails.childHeight, equals(0.0));
 
-      final secondSpoilerDetails =
-          spoilersDetails.spoilersDetails.last['details'];
+      final secondSpoilerDetails = spoilersDetails.spoilersDetails.last.details;
 
       expect(secondSpoilerDetails.headerWidth, equals(10));
       expect(secondSpoilerDetails.headerHeight, equals(15));
