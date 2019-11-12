@@ -14,7 +14,6 @@ class Example extends StatelessWidget {
           child: Container(
             decoration: BoxDecoration(border: Border.all(color: Colors.blue)),
             child: Spoilers(
-              isOpened: true,
               header: Text("Spoilers example header"),
               children: <Spoiler>[
                 Spoiler(

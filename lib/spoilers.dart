@@ -66,8 +66,7 @@ class Spoilers extends StatefulWidget {
   SpoilersState createState() => SpoilersState();
 }
 
-class SpoilersState extends State<Spoilers>
-    with SingleTickerProviderStateMixin {
+class SpoilersState extends State<Spoilers> with TickerProviderStateMixin {
   double headerWidth;
   double headerHeight;
 
@@ -111,7 +110,17 @@ class SpoilersState extends State<Spoilers>
 
       childrenUpdateEvents.stream.listen((details) {
         spoilersChildrenHeight[indexOfSpoilerChild] = details.childHeight;
-        print('$indexOfSpoilerChild: isOpened:${details.isOpened}');
+        double spoilersHeight = 0;
+
+        spoilersHeight +=
+            spoilersHeadersHeight.fold(0, (first, second) => first + second);
+
+        spoilersHeight +=
+            spoilersChildrenHeight.fold(0, (first, second) => first + second);
+
+        childHeightAnimation = childHeightAnimation
+            .drive(Tween(begin: spoilersHeight, end: spoilersHeight));
+        childHeightAnimationController.reset();
       });
     }
 
@@ -212,16 +221,15 @@ class SpoilersState extends State<Spoilers>
 
     double spoilersHeight = 0;
 
-    for (double height in spoilersHeadersHeight) {
-      spoilersHeight += height;
-    }
+    spoilersHeight +=
+        spoilersHeadersHeight.fold(0, (first, second) => first + second);
 
-    for (double height in spoilersChildrenHeight) {
-      spoilersHeight += height;
-    }
+    spoilersHeight +=
+        spoilersChildrenHeight.fold(0, (first, second) => first + second);
 
-    childHeightAnimation = Tween(begin: 0.toDouble(), end: childHeight)
-        .animate(childHeightAnimation);
+    childHeightAnimation = childHeightAnimation
+        .drive(Tween(begin: 0.toDouble(), end: spoilersHeight));
+    childHeightAnimationController.reset();
 
     try {
       if (widget.waitFirstCloseAnimationBeforeOpen) {
@@ -297,9 +305,25 @@ class SpoilersState extends State<Spoilers>
 
       isOpenController.add(isOpened);
 
-      isOpened
-          ? await childHeightAnimationController.forward().orCancel
-          : await childHeightAnimationController.reverse().orCancel;
+      double spoilersHeight = 0;
+
+      spoilersHeight +=
+          spoilersHeadersHeight.fold(0, (first, second) => first + second);
+
+      spoilersHeight +=
+          spoilersChildrenHeight.fold(0, (first, second) => first + second);
+
+      childHeightAnimation = CurvedAnimation(
+              parent: childHeightAnimationController,
+              curve: widget.openCurve,
+              reverseCurve: widget.closeCurve)
+          .drive(isOpened
+              ? Tween(begin: 0.0, end: spoilersHeight)
+              : Tween(begin: spoilersHeight, end: 0.0));
+
+      childHeightAnimationController.reset();
+
+      await childHeightAnimationController.forward().orCancel;
     } on TickerCanceled {
       // the animation got canceled, probably because we were disposed
     }
