@@ -11,25 +11,18 @@ class SpoilersDetails {
   double headerWidth;
   double headerHeight;
 
-  List<double> headersWidth;
-  List<double> headersHeight;
+  List<Map<String, dynamic>> spoilersDetails;
 
   double childWidth;
   double childHeight;
-
-  List<double> childrenWidth;
-  List<double> childrenHeight;
 
   SpoilersDetails(
       {this.isOpened,
       this.headerWidth,
       this.headerHeight,
-      this.headersWidth,
-      this.headersHeight,
       this.childWidth,
       this.childHeight,
-      this.childrenWidth,
-      this.childrenHeight});
+      this.spoilersDetails});
 }
 
 typedef OnReady = Function(SpoilersDetails);
@@ -67,17 +60,14 @@ class Spoilers extends StatefulWidget {
 }
 
 class SpoilersState extends State<Spoilers> with TickerProviderStateMixin {
-  double headerWidth;
-  double headerHeight;
+  double headerWidth = 0;
+  double headerHeight = 0;
 
-  double childWidth;
-  double childHeight;
+  double childWidth = 0;
+  double childHeight = 0;
 
-  final spoilersHeadersWidth = <double>[];
-  final spoilersHeadersHeight = <double>[];
-
-  final spoilersChildrenWidth = <double>[];
-  final spoilersChildrenHeight = <double>[];
+  final List<Spoiler> children = [];
+  final List<Map<String, dynamic>> spoilersDetails = [];
 
   AnimationController childHeightAnimationController;
   Animation<double> childHeightAnimation;
@@ -90,41 +80,15 @@ class SpoilersState extends State<Spoilers> with TickerProviderStateMixin {
 
   bool isOpened;
 
-  List<StreamController<SpoilerDetails>> childrenOnUpdateEvents = [];
-  List<StreamController<SpoilerDetails>> childrenOnReadyEvents = [];
-  List<Spoiler> children;
-
   @override
   void initState() {
     super.initState();
 
-    children =
-        createChildrenCallbacks(widget.children == null ? [] : widget.children);
-
-    /// child - need to know whose events.
-    for (Spoiler child in children) {
-      final indexOfSpoilerChild = children.indexOf(child);
-
-      // ignore: close_sinks
-      final childrenUpdateEvents = childrenOnUpdateEvents[indexOfSpoilerChild];
-
-      childrenUpdateEvents.stream.listen((details) {
-        spoilersChildrenHeight[indexOfSpoilerChild] = details.childHeight;
-        double spoilersHeight = 0;
-
-        spoilersHeight +=
-            spoilersHeadersHeight.fold(0, (first, second) => first + second);
-
-        spoilersHeight +=
-            spoilersChildrenHeight.fold(0, (first, second) => first + second);
-
-        childHeightAnimation = childHeightAnimation
-            .drive(Tween(begin: spoilersHeight, end: spoilersHeight));
-        childHeightAnimationController.reset();
-      });
-    }
-
     isOpened = widget.isOpened;
+
+    prepareSpoilersAndDetails(widget.children == null ? [] : widget.children);
+    subscribeOnChildrenEvents(spoilersDetails);
+
     isReady = isReadyController.stream.asBroadcastStream();
     isOpen = isOpenController.stream.asBroadcastStream();
 
@@ -139,17 +103,6 @@ class SpoilersState extends State<Spoilers> with TickerProviderStateMixin {
         curve: widget.openCurve,
         reverseCurve: widget.closeCurve);
 
-    final spoilersDetails = <SpoilerDetails>[];
-
-    final spoilersDetailsQueue =
-        Iterable<Future>.generate(children.length, (index) async {
-      // ignore: close_sinks
-      final spoilerReadyEvents = childrenOnReadyEvents[index];
-
-      final details = await spoilerReadyEvents.stream.first;
-      spoilersDetails.add(details);
-    });
-
     SchedulerBinding.instance.addPostFrameCallback((_) async {
       headerWidth = _headerKey.currentContext.size.width;
       headerHeight = _headerKey.currentContext.size.height;
@@ -157,25 +110,55 @@ class SpoilersState extends State<Spoilers> with TickerProviderStateMixin {
       childWidth = _childKey.currentContext.size.width;
       childHeight = _childKey.currentContext.size.height;
 
-      if (spoilersDetailsQueue.isNotEmpty) {
-        await Future.wait(spoilersDetailsQueue);
-      }
+      await prepareChildrenSize();
 
-      for (SpoilerDetails details in spoilersDetails) {
-        spoilersHeadersWidth.add(details.headerWidth);
-        spoilersHeadersHeight.add(details.headerHeight);
-
-        if (details.isOpened) {
-          spoilersChildrenWidth.add(details.childWidth);
-          spoilersChildrenHeight.add(details.childHeight);
-        } else {
-          spoilersChildrenWidth.add(0);
-          spoilersChildrenHeight.add(0);
-        }
-      }
-
-      prepareAnimation().then((_) => updateCallbacks());
+      prepareFirstAnimation().then((_) => updateCallbacks());
     });
+  }
+
+  Future<void> prepareChildrenSize() async {
+    final spoilersSize = <SpoilerDetails>[];
+
+    final spoilersDetailsQueue =
+        Iterable<Future>.generate(spoilersDetails.length, (index) async {
+      final details = await spoilersDetails[index]['detailsReady'].stream.first;
+      spoilersSize.add(details);
+      spoilersDetails[index]['details'] = details;
+    });
+
+    if (spoilersDetailsQueue.isNotEmpty) {
+      await Future.wait(spoilersDetailsQueue);
+    }
+
+    for (SpoilerDetails details in spoilersSize) {
+      final spoilerIndex = spoilersSize.indexOf(details);
+      final spoilerDetails = spoilersDetails[spoilerIndex]['details'];
+
+      spoilerDetails.headerWidth = details.headerWidth;
+      spoilerDetails.headerHeight = details.headerHeight;
+
+      spoilerDetails.childWidth = details.childWidth;
+      spoilerDetails.childHeight = details.isOpened ? details.childHeight : 0.0;
+    }
+  }
+
+  void subscribeOnChildrenEvents(List<Map<String, dynamic>> spoilersDetails) {
+    for (Map<String, dynamic> spoilerDetails in spoilersDetails) {
+      // ignore: close_sinks
+      final childrenUpdateEvents = spoilerDetails['detailsUpdate'];
+
+      childrenUpdateEvents.stream.listen((details) {
+        spoilerDetails['details'] = details;
+
+        final spoilersHeight =
+            getSpoilersHeaderHeight() + getSpoilersChildHeight();
+
+        childHeightAnimation = childHeightAnimation
+            .drive(Tween(begin: spoilersHeight, end: spoilersHeight));
+
+        childHeightAnimationController.reset();
+      });
+    }
   }
 
   void updateCallbacks() {
@@ -185,12 +168,9 @@ class SpoilersState extends State<Spoilers> with TickerProviderStateMixin {
               isOpened: isOpened,
               headerWidth: headerWidth,
               headerHeight: headerHeight,
-              headersWidth: spoilersHeadersWidth,
-              headersHeight: spoilersHeadersHeight,
               childWidth: childWidth,
               childHeight: childHeightAnimation.value,
-              childrenWidth: spoilersChildrenWidth,
-              childrenHeight: spoilersChildrenHeight)));
+              spoilersDetails: spoilersDetails)));
     }
 
     if (widget.onReadyCallback != null) {
@@ -198,57 +178,23 @@ class SpoilersState extends State<Spoilers> with TickerProviderStateMixin {
           isOpened: isOpened,
           headerWidth: headerWidth,
           headerHeight: headerHeight,
-          headersWidth: spoilersHeadersWidth,
-          headersHeight: spoilersHeadersHeight,
           childWidth: childWidth,
           childHeight: childHeight,
-          childrenWidth: spoilersChildrenWidth,
-          childrenHeight: spoilersChildrenHeight));
+          spoilersDetails: spoilersDetails));
     }
   }
 
-  double getSpoilersHeight() {
-    double spoilersHeight = 0;
-    spoilersHeight +=
-        spoilersHeadersHeight.fold(0, (first, second) => first + second);
-    spoilersHeight +=
-        spoilersChildrenHeight.fold(0, (first, second) => first + second);
-    return spoilersHeight;
-  }
-
-  Future<void> prepareAnimation() async {
+  Future<void> prepareFirstAnimation() async {
     isReadyController.add(true);
 
-    double spoilersHeight = 0;
+    childHeightAnimation = childHeightAnimation.drive(isOpened
+        ? Tween(begin: 0.0, end: getSpoilersHeight())
+        : Tween(begin: getSpoilersHeight(), end: 0.0));
 
-    spoilersHeight +=
-        spoilersHeadersHeight.fold(0, (first, second) => first + second);
-
-    spoilersHeight +=
-        spoilersChildrenHeight.fold(0, (first, second) => first + second);
-
-    childHeightAnimation = childHeightAnimation
-        .drive(Tween(begin: 0.toDouble(), end: spoilersHeight));
     childHeightAnimationController.reset();
-
     try {
-      if (widget.waitFirstCloseAnimationBeforeOpen) {
-        if (isOpened) {
-          await childHeightAnimationController.forward().orCancel;
-        } else {
-          await childHeightAnimationController.forward().orCancel.whenComplete(
-              () => childHeightAnimationController.reverse().orCancel);
-        }
-      } else {
-        if (isOpened) {
-          await childHeightAnimationController.forward().orCancel;
-        } else {
-          await childHeightAnimationController.reverse().orCancel;
-        }
-      }
-    } on TickerCanceled {
-      // the animation got canceled, probably because we were disposed
-    }
+      await childHeightAnimationController.forward().orCancel;
+    } on TickerCanceled {}
   }
 
   @override
@@ -256,17 +202,27 @@ class SpoilersState extends State<Spoilers> with TickerProviderStateMixin {
     childHeightAnimationController.dispose();
     isOpenController.close();
     isReadyController.close();
-    childrenOnReadyEvents.forEach((controller) => controller.close());
-    childrenOnUpdateEvents.forEach((controller) => controller.close());
+
+    for (Map<String, dynamic> details in spoilersDetails) {
+      details['detailsReady'].close();
+      details['detailsUpdate'].close();
+    }
+
     super.dispose();
   }
 
-  List<Spoiler> createChildrenCallbacks(List<Spoiler> spoilers) {
-    final spoilersWithDetailsControllers = <Spoiler>[];
-
+  void prepareSpoilersAndDetails(List<Spoiler> spoilers) {
     for (Spoiler spoiler in spoilers) {
+      // ignore: close_sinks
       final detailsReadyController = StreamController<SpoilerDetails>();
+      // ignore: close_sinks
       final detailsUpdateController = StreamController<SpoilerDetails>();
+
+      spoilersDetails.add({
+        'detailsReady': detailsReadyController,
+        'detailsUpdate': detailsUpdateController,
+        'isOpened': spoiler.isOpened
+      });
 
       final updatedSpoiler = Spoiler(
         onReadyCallback: (details) {
@@ -283,20 +239,15 @@ class SpoilersState extends State<Spoilers> with TickerProviderStateMixin {
         header: spoiler.header,
         child: spoiler.child,
         duration: spoiler.duration,
-        isOpened: spoiler.isOpened,
+        isOpened: isOpened ? spoiler.isOpened : false, // need issue
         openCurve: spoiler.openCurve,
         closeCurve: spoiler.closeCurve,
         waitFirstCloseAnimationBeforeOpen:
             spoiler.waitFirstCloseAnimationBeforeOpen,
       );
 
-      childrenOnReadyEvents.add(detailsReadyController);
-      childrenOnUpdateEvents.add(detailsUpdateController);
-
-      spoilersWithDetailsControllers.add(updatedSpoiler);
+      children.add(updatedSpoiler);
     }
-
-    return spoilersWithDetailsControllers;
   }
 
   Future<void> toggle() async {
@@ -305,21 +256,13 @@ class SpoilersState extends State<Spoilers> with TickerProviderStateMixin {
 
       isOpenController.add(isOpened);
 
-      double spoilersHeight = 0;
-
-      spoilersHeight +=
-          spoilersHeadersHeight.fold(0, (first, second) => first + second);
-
-      spoilersHeight +=
-          spoilersChildrenHeight.fold(0, (first, second) => first + second);
-
+      final openTween = Tween(begin: 0.0, end: getSpoilersHeight());
+      final closeTween = Tween(begin: getSpoilersHeight(), end: 0.0);
       childHeightAnimation = CurvedAnimation(
               parent: childHeightAnimationController,
               curve: widget.openCurve,
               reverseCurve: widget.closeCurve)
-          .drive(isOpened
-              ? Tween(begin: 0.0, end: spoilersHeight)
-              : Tween(begin: spoilersHeight, end: 0.0));
+          .drive(isOpened ? openTween : closeTween);
 
       childHeightAnimationController.reset();
 
@@ -328,6 +271,39 @@ class SpoilersState extends State<Spoilers> with TickerProviderStateMixin {
       // the animation got canceled, probably because we were disposed
     }
   }
+
+  double getSpoilersHeaderHeight() {
+    double height = 0.0;
+
+    for (Map<String, dynamic> details in spoilersDetails) {
+      height += details['details'].headerHeight;
+    }
+
+    return height.toDouble();
+  }
+
+  double getSpoilersHeaderWidth() {
+    double width = 0.0;
+
+    for (Map<String, dynamic> details in spoilersDetails) {
+      width += details['details'].headerWidth;
+    }
+
+    return width.toDouble();
+  }
+
+  double getSpoilersChildHeight() {
+    double height = 0.0;
+
+    for (Map<String, dynamic> details in spoilersDetails) {
+      height += details['details'].childHeight;
+    }
+
+    return height.toDouble();
+  }
+
+  double getSpoilersHeight() =>
+      getSpoilersHeaderHeight() + getSpoilersChildHeight();
 
   final GlobalKey _headerKey = GlobalKey(debugLabel: 'header');
   final GlobalKey _childKey = GlobalKey(debugLabel: 'child');

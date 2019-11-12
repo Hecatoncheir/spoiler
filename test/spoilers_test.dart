@@ -35,6 +35,8 @@ void main() {
 
       final SpoilersState state = tester.state(find.byWidget(widget));
 
+      await tester.pumpAndSettle(Duration(seconds: 3));
+
       expect(state.isOpened, isFalse);
 
       expect(find.byKey(Key('spoilers_child_closed')), findsOneWidget);
@@ -101,11 +103,23 @@ void main() {
       expect(spoilersDetails.headerWidth, equals(10));
       expect(spoilersDetails.headerHeight, equals(15));
 
-      expect(spoilersDetails.headersWidth, equals([10, 10]));
-      expect(spoilersDetails.headersHeight, equals([15, 15]));
+      final firstSpoilerDetails =
+          spoilersDetails.spoilersDetails.first['details'];
 
-      expect(spoilersDetails.childrenWidth, equals([20, 20]));
-      expect(spoilersDetails.childrenHeight, equals([25, 25]));
+      expect(firstSpoilerDetails.headerWidth, equals(10));
+      expect(firstSpoilerDetails.headerHeight, equals(15));
+
+      /// Zero because spoiler is not opened (closed) by Spoilers widget.
+      expect(firstSpoilerDetails.childHeight, equals(0.0));
+
+      final secondSpoilerDetails =
+          spoilersDetails.spoilersDetails.last['details'];
+
+      expect(secondSpoilerDetails.headerWidth, equals(10));
+      expect(secondSpoilerDetails.headerHeight, equals(15));
+
+      /// Zero because spoiler is not opened (closed) by Spoilers widget.
+      expect(secondSpoilerDetails.childHeight, equals(0.0));
     });
 
     testWidgets('can be invoked when widgets ready', (tester) async {
@@ -148,17 +162,28 @@ void main() {
       expect(spoilersDetails.headerWidth, equals(10));
       expect(spoilersDetails.headerHeight, equals(15));
 
-      expect(spoilersDetails.headersWidth, equals([10, 10]));
-      expect(spoilersDetails.headersHeight, equals([15, 15]));
+      final firstSpoilerDetails =
+          spoilersDetails.spoilersDetails.first['details'];
 
-      expect(spoilersDetails.childrenWidth, equals([0, 0]));
-      expect(spoilersDetails.childrenHeight, equals([0, 0]));
+      expect(firstSpoilerDetails.headerWidth, equals(10));
+      expect(firstSpoilerDetails.headerHeight, equals(15));
+
+      /// Zero because spoiler is not opened (closed) by Spoilers widget.
+      expect(firstSpoilerDetails.childHeight, equals(0.0));
+
+      final secondSpoilerDetails =
+          spoilersDetails.spoilersDetails.last['details'];
+
+      expect(secondSpoilerDetails.headerWidth, equals(10));
+      expect(secondSpoilerDetails.headerHeight, equals(15));
+
+      /// Zero because spoiler is not opened (closed) by Spoilers widget.
+      expect(secondSpoilerDetails.childHeight, equals(0.0));
     });
 
     testWidgets('can be sended when widgets toggle and height or width change',
         (tester) async {
       final firstSpoiler = Spoiler(
-          isOpened: true,
           header: SizedBox(
             width: 10,
             height: 15,
@@ -171,7 +196,6 @@ void main() {
           ));
 
       final secondSpoiler = Spoiler(
-          isOpened: true,
           header: SizedBox(
             width: 10,
             height: 15,
@@ -195,27 +219,36 @@ void main() {
       await tester.pumpWidget(MaterialApp(home: Scaffold(body: widget)));
       final SpoilersState state = tester.state(find.byWidget(widget));
 
+      await tester.pumpAndSettle(Duration(seconds: 3));
+
       expect(spoilersDetails, isNotNull);
       expect(spoilersDetails.isOpened, isFalse);
 
       expect(state.isOpened, isFalse);
 
       await tester.tap(find.byKey(Key('spoilers_header')));
-      await tester.pumpAndSettle();
+      await tester.pumpAndSettle(Duration(seconds: 3));
+
+      expect(spoilersDetails.isOpened, isFalse);
+      expect(details.last.isOpened, isTrue);
 
       expect(state.isOpened, isTrue);
 
       expect(details, isNotEmpty);
       expect(details.last.isOpened, isTrue);
       expect(details.last.childHeight, isPositive);
-      expect(spoilersDetails.childHeight == details.last.childHeight, isTrue);
+      expect(details.last.childHeight, equals(30));
 
       await tester.tap(find.byKey(Key('spoilers_header')));
       await tester.pumpAndSettle();
+      await tester.pumpAndSettle(Duration(seconds: 3));
+      await tester.pump(Duration(seconds: 3));
 
       expect(state.isOpened, false);
 
-      expect(spoilersDetails.childHeight == details.last.childHeight, isFalse);
+      expect(spoilersDetails.isOpened, isFalse);
+      expect(details.last.isOpened, isFalse);
+      expect(spoilersDetails.childHeight != details.last.childHeight, isTrue);
       expect(details.last.childHeight, equals(0));
     });
   });
