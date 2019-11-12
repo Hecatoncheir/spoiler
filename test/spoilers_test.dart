@@ -2,9 +2,10 @@ import 'dart:async';
 
 import 'package:flutter_test/flutter_test.dart';
 import 'package:flutter/material.dart';
-import 'package:spoiler/spoiler.dart';
 
+import 'package:spoiler/spoiler.dart';
 import 'package:spoiler/spoilers.dart';
+import 'package:spoiler/models/spoilers_details.dart';
 
 void main() {
   group('Spoilers wiget', () {

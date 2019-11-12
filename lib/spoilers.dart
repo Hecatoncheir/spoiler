@@ -3,40 +3,11 @@ import 'dart:async';
 import 'package:flutter/scheduler.dart';
 import 'package:flutter/widgets.dart';
 
+import 'package:spoiler/models/spoiler_data.dart';
+import 'package:spoiler/models/spoiler_details.dart';
+import 'package:spoiler/models/spoilers_details.dart';
+
 import 'spoiler.dart';
-
-class SpoilerData {
-  // ignore: close_sinks
-  StreamController<SpoilerDetails> updateEvents;
-  // ignore: close_sinks
-  StreamController<SpoilerDetails> readyEvents;
-  SpoilerDetails details;
-
-  bool isOpened;
-
-  SpoilerData(
-      {this.updateEvents, this.readyEvents, this.details, this.isOpened});
-}
-
-class SpoilersDetails {
-  bool isOpened;
-
-  double headerWidth;
-  double headerHeight;
-
-  List<SpoilerData> spoilersDetails;
-
-  double childWidth;
-  double childHeight;
-
-  SpoilersDetails(
-      {this.isOpened,
-      this.headerWidth,
-      this.headerHeight,
-      this.childWidth,
-      this.childHeight,
-      this.spoilersDetails});
-}
 
 typedef OnReady = Function(SpoilersDetails);
 typedef OnUpdate = Function(SpoilersDetails);

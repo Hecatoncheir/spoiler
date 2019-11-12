@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 
+import 'package:spoiler/models/spoiler_details.dart';
+
 import 'package:spoiler/spoiler.dart';
 
 void main() {

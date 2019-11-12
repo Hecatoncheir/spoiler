@@ -3,22 +3,7 @@ import 'dart:async';
 import 'package:flutter/scheduler.dart';
 import 'package:flutter/widgets.dart';
 
-class SpoilerDetails {
-  bool isOpened;
-
-  double headerWidth;
-  double headerHeight;
-
-  double childWidth;
-  double childHeight;
-
-  SpoilerDetails(
-      {this.isOpened,
-      this.headerWidth,
-      this.headerHeight,
-      this.childWidth,
-      this.childHeight});
-}
+import 'package:spoiler/models/spoiler_details.dart';
 
 typedef OnReady = Function(SpoilerDetails);
 typedef OnUpdate = Function(SpoilerDetails);
