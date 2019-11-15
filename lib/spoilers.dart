@@ -204,7 +204,10 @@ class SpoilersState extends State<Spoilers> with TickerProviderStateMixin {
       // ignore: close_sinks
       final detailsUpdateController = StreamController<SpoilerDetails>();
 
+      final key = GlobalKey();
+
       final data = SpoilerData(
+          key: key,
           readyEvents: detailsReadyController,
           updateEvents: detailsUpdateController,
           isOpened: spoiler.isOpened);
@@ -212,6 +215,7 @@ class SpoilersState extends State<Spoilers> with TickerProviderStateMixin {
       spoilersChildrenData.add(data);
 
       final updatedSpoiler = Spoiler(
+        key: key,
         onReadyCallback: (details) {
           if (spoiler.onReadyCallback != null) spoiler.onReadyCallback(details);
           detailsReadyController.add(details);

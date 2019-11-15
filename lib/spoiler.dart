@@ -24,8 +24,11 @@ class Spoiler extends StatefulWidget {
   final OnReady onReadyCallback;
   final OnUpdate onUpdateCallback;
 
+  final Key key;
+
   const Spoiler(
-      {this.header,
+      {this.key,
+      this.header,
       this.child,
       this.isOpened = false,
       this.waitFirstCloseAnimationBeforeOpen = false,
@@ -33,7 +36,8 @@ class Spoiler extends StatefulWidget {
       this.onReadyCallback,
       this.onUpdateCallback,
       this.openCurve = Curves.easeOutExpo,
-      this.closeCurve = Curves.easeInExpo});
+      this.closeCurve = Curves.easeInExpo})
+      : super(key: key);
 
   @override
   SpoilerState createState() => SpoilerState();
