@@ -21,6 +21,34 @@ void main() {
       expect(find.text('test header name'), findsOneWidget);
     });
 
+    testWidgets('can show leading arrow', (WidgetTester tester) async {
+      final widget = Spoiler(header: SizedBox(width: 10), leadingArrow: true);
+      await tester.pumpWidget(MaterialApp(home: Scaffold(body: widget)));
+
+      expect(find.byIcon(Icons.keyboard_arrow_down), findsOneWidget);
+      expect(tester.getCenter(find.byIcon(Icons.keyboard_arrow_down)),
+          equals(Offset(12, 12)));
+
+      await tester.tap(find.byIcon(Icons.keyboard_arrow_down));
+      await tester.pumpAndSettle();
+
+      expect(find.byIcon(Icons.keyboard_arrow_up), findsOneWidget);
+    });
+
+    testWidgets('can show trailing arrow', (WidgetTester tester) async {
+      final widget = Spoiler(header: SizedBox(width: 10), trailingArrow: true);
+      await tester.pumpWidget(MaterialApp(home: Scaffold(body: widget)));
+
+      expect(find.byIcon(Icons.keyboard_arrow_down), findsOneWidget);
+      expect(tester.getCenter(find.byIcon(Icons.keyboard_arrow_down)),
+          equals(Offset(22, 12)));
+
+      await tester.tap(find.byIcon(Icons.keyboard_arrow_down));
+      await tester.pumpAndSettle();
+
+      expect(find.byIcon(Icons.keyboard_arrow_up), findsOneWidget);
+    });
+
     testWidgets('can show and hide content', (WidgetTester tester) async {
       final widget = Spoiler(child: Text('context'));
       await tester.pumpWidget(MaterialApp(home: Scaffold(body: widget)));
