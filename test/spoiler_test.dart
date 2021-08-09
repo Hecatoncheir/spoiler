@@ -6,28 +6,60 @@ import 'package:spoiler/models/spoiler_details.dart';
 import 'package:spoiler/spoiler.dart';
 
 void main() {
-  group('Spoiler wiget', () {
+  group('Spoiler widget', () {
     testWidgets('can show header', (WidgetTester tester) async {
-      final widget = Spoiler();
-      await tester.pumpWidget(MaterialApp(home: Scaffold(body: widget)));
+      const testWidget = Spoiler();
 
-      expect(find.byKey(Key('spoiler_header')), findsOneWidget);
+      const widget = MaterialApp(
+        home: Scaffold(
+          body: testWidget,
+        ),
+      );
+
+      await tester.pumpWidget(widget);
+
+      expect(find.byKey(const Key('spoiler_header')), findsOneWidget);
     });
 
     testWidgets('can show custom header', (WidgetTester tester) async {
-      final widget = Spoiler(header: Text("test header name"));
-      await tester.pumpWidget(MaterialApp(home: Scaffold(body: widget)));
+      const testWidget = Spoiler(
+        header: Text(
+          "test header name",
+        ),
+      );
+
+      const widget = MaterialApp(
+        home: Scaffold(
+          body: testWidget,
+        ),
+      );
+
+      await tester.pumpWidget(widget);
 
       expect(find.text('test header name'), findsOneWidget);
     });
 
     testWidgets('can show leading arrow', (WidgetTester tester) async {
-      final widget = Spoiler(header: SizedBox(width: 10), leadingArrow: true);
-      await tester.pumpWidget(MaterialApp(home: Scaffold(body: widget)));
+      const testWidget = Spoiler(
+        header: SizedBox(
+          width: 10,
+        ),
+        leadingArrow: true,
+      );
+
+      const widget = MaterialApp(
+        home: Scaffold(
+          body: testWidget,
+        ),
+      );
+
+      await tester.pumpWidget(widget);
 
       expect(find.byIcon(Icons.keyboard_arrow_down), findsOneWidget);
-      expect(tester.getCenter(find.byIcon(Icons.keyboard_arrow_down)),
-          equals(Offset(12, 12)));
+      expect(
+        tester.getCenter(find.byIcon(Icons.keyboard_arrow_down)),
+        equals(const Offset(12, 12)),
+      );
 
       await tester.tap(find.byIcon(Icons.keyboard_arrow_down));
       await tester.pumpAndSettle();
@@ -36,12 +68,24 @@ void main() {
     });
 
     testWidgets('can show trailing arrow', (WidgetTester tester) async {
-      final widget = Spoiler(header: SizedBox(width: 10), trailingArrow: true);
-      await tester.pumpWidget(MaterialApp(home: Scaffold(body: widget)));
+      const testWidget = Spoiler(
+        header: SizedBox(width: 10),
+        trailingArrow: true,
+      );
+
+      const widget = MaterialApp(
+        home: Scaffold(
+          body: testWidget,
+        ),
+      );
+
+      await tester.pumpWidget(widget);
 
       expect(find.byIcon(Icons.keyboard_arrow_down), findsOneWidget);
-      expect(tester.getCenter(find.byIcon(Icons.keyboard_arrow_down)),
-          equals(Offset(22, 12)));
+      expect(
+        tester.getCenter(find.byIcon(Icons.keyboard_arrow_down)),
+        equals(const Offset(22, 12)),
+      );
 
       await tester.tap(find.byIcon(Icons.keyboard_arrow_down));
       await tester.pumpAndSettle();
@@ -50,25 +94,45 @@ void main() {
     });
 
     testWidgets('can show and hide content', (WidgetTester tester) async {
-      final widget = Spoiler(child: Text('context'));
-      await tester.pumpWidget(MaterialApp(home: Scaffold(body: widget)));
+      // It's open first time by default, and after first frame it close.
+      const testWidget = Spoiler(
+        child: Text(
+          'context',
+        ),
+      );
 
-      final SpoilerState state = tester.state(find.byWidget(widget));
+      const widget = MaterialApp(
+        home: Scaffold(
+          body: testWidget,
+        ),
+      );
 
+      await tester.pumpWidget(widget);
+
+      final SpoilerState state = tester.state(find.byWidget(testWidget));
+
+      expect(find.text('context'), findsOneWidget);
+
+      expect(find.byKey(const Key('spoiler_child_closed')), findsNothing);
+      expect(find.byKey(const Key('spoiler_child_opened')), findsOneWidget);
+
+      await tester.pumpAndSettle();
+
+      expect(find.text('context'), findsNothing);
       expect(state.isOpened, isFalse);
 
-      expect(find.byKey(Key('spoiler_child_closed')), findsOneWidget);
-      expect(find.byKey(Key('spoiler_child_opened')), findsNothing);
+      expect(find.byKey(const Key('spoiler_child_closed')), findsOneWidget);
+      expect(find.byKey(const Key('spoiler_child_opened')), findsNothing);
 
       expect(state.childHeightAnimation.value, equals(0));
 
-      await tester.tap(find.byKey(Key('spoiler_header')));
+      await tester.tap(find.byKey(const Key('spoiler_header')));
       await tester.pumpAndSettle();
 
       expect(state.isOpened, isTrue);
 
-      expect(find.byKey(Key('spoiler_child_opened')), findsOneWidget);
-      expect(find.byKey(Key('spoiler_child_closed')), findsNothing);
+      expect(find.byKey(const Key('spoiler_child_closed')), findsNothing);
+      expect(find.byKey(const Key('spoiler_child_opened')), findsOneWidget);
 
       expect(state.childHeightAnimation.value, isPositive);
 
@@ -76,16 +140,23 @@ void main() {
     });
   });
 
-  group('Spoiler wiget callbacks', () {
+  group('Spoiler widget callbacks', () {
     testWidgets('can be invoked when widgets ready', (tester) async {
-      SpoilerDetails spoilerDetails;
+      late SpoilerDetails spoilerDetails;
 
-      final widget = Spoiler(
-          onReadyCallback: (details) => spoilerDetails = details,
-          header: SizedBox(width: 10, height: 15),
-          child: SizedBox(width: 20, height: 25));
+      final testWidget = Spoiler(
+        onReadyCallback: (details) => spoilerDetails = details,
+        header: const SizedBox(width: 10, height: 15),
+        child: const SizedBox(width: 20, height: 25),
+      );
 
-      await tester.pumpWidget(MaterialApp(home: Scaffold(body: widget)));
+      final widget = MaterialApp(
+        home: Scaffold(
+          body: testWidget,
+        ),
+      );
+
+      await tester.pumpWidget(widget);
       await tester.pumpAndSettle();
 
       expect(spoilerDetails.headerWidth, equals(10));
@@ -95,26 +166,32 @@ void main() {
       expect(spoilerDetails.childHeight, equals(25));
     });
 
-    testWidgets('can be sended when widgets toggle and height or width change',
+    testWidgets('can be send when widgets toggle and height or width change',
         (tester) async {
-      SpoilerDetails spoilerDetails;
+      late SpoilerDetails spoilerDetails;
       List<SpoilerDetails> details = [];
 
-      final widget = Spoiler(
-        child: Text('context'),
+      final testWidget = Spoiler(
+        child: const Text('context'),
         onReadyCallback: (details) => spoilerDetails = details,
         onUpdateCallback: (updatedDetails) => details.add(updatedDetails),
       );
 
-      await tester.pumpWidget(MaterialApp(home: Scaffold(body: widget)));
-      final SpoilerState state = tester.state(find.byWidget(widget));
+      final widget = MaterialApp(
+        home: Scaffold(
+          body: testWidget,
+        ),
+      );
+
+      await tester.pumpWidget(widget);
+      final SpoilerState state = tester.state(find.byWidget(testWidget));
 
       expect(spoilerDetails, isNotNull);
       expect(spoilerDetails.isOpened, isFalse);
 
       expect(state.isOpened, isFalse);
 
-      await tester.tap(find.byKey(Key('spoiler_header')));
+      await tester.tap(find.byKey(const Key('spoiler_header')));
       await tester.pumpAndSettle();
 
       expect(state.isOpened, isTrue);
@@ -124,7 +201,7 @@ void main() {
       expect(details.last.childHeight, isPositive);
       expect(spoilerDetails.childHeight == details.last.childHeight, isTrue);
 
-      await tester.tap(find.byKey(Key('spoiler_header')));
+      await tester.tap(find.byKey(const Key('spoiler_header')));
       await tester.pumpAndSettle();
 
       expect(state.isOpened, false);

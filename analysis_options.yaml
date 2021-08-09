@@ -1,0 +1,64 @@
+#include: package:lints/recommended.yaml
+include: package:flutter_lints/flutter.yaml
+
+analyzer:
+  enable-experiment:
+    - non-nullable
+  plugins:
+    - dart_code_metrics
+
+linter:
+  rules:
+    unnecessary_overrides: false
+
+dart_code_metrics:
+  anti-patterns:
+    - long-method
+    - long-parameter-list
+  metrics:
+    cycloramic-complexity: 5
+    maximum-nesting-level: 5
+    number-of-parameters: 4
+    source-lines-of-code: 250
+  metrics-exclude:
+    - test/**
+  rules:
+#    - avoid-late-keyword
+#    - avoid-non-null-assertion:
+#        exclude:
+#          - test/**
+    - avoid-unused-parameters
+    - binary-expression-operand-order
+    - double-literal-format
+    - member-ordering:
+        exclude:
+          - test/**
+    - member-ordering-extended:
+        exclude:
+          - test/**
+    - newline-before-return:
+        exclude:
+          - test/**
+    - no-boolean-literal-compare
+    - no-empty-block
+    - no-equal-then-else
+#    - no-magic-number:
+#        exclude:
+#          - test/**
+    - no-object-declaration
+    - prefer-conditional-expressions
+    - prefer-trailing-comma:
+        exclude:
+          - test/**
+    # Flutter specific
+#    - always-remove-listener
+    - avoid-returning-widgets:
+       ignored-names:
+          - buildHeader
+          - buildChild
+          - buildDefaultHeader
+    - avoid-unnecessary-setstate
+    - avoid-wrapping-in-padding
+    - prefer-extracting-callbacks
+    - prefer-intl-name
+    - provide-correct-intl-args

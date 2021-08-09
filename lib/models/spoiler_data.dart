@@ -5,19 +5,21 @@ import 'package:spoiler/models/spoiler_details.dart';
 
 class SpoilerData {
   // ignore: close_sinks
-  StreamController<SpoilerDetails> updateEvents;
+  StreamController<SpoilerDetails>? updateEvents;
   // ignore: close_sinks
-  StreamController<SpoilerDetails> readyEvents;
-  SpoilerDetails details;
+  StreamController<SpoilerDetails>? readyEvents;
 
-  GlobalKey key;
+  SpoilerDetails? details;
 
-  bool isOpened;
+  GlobalKey? key;
 
-  SpoilerData(
-      {this.key,
-      this.updateEvents,
-      this.readyEvents,
-      this.details,
-      this.isOpened});
+  bool? isOpened;
+
+  SpoilerData({
+    this.key,
+    this.updateEvents,
+    this.readyEvents,
+    this.details,
+    this.isOpened,
+  });
 }

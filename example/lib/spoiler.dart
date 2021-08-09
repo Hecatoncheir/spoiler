@@ -1,5 +1,4 @@
 import 'package:flutter/material.dart';
-import 'package:flutter/widgets.dart';
 import 'package:spoiler/spoiler.dart';
 
 void main() => runApp(Example());

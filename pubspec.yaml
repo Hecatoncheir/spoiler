@@ -1,18 +1,22 @@
 name: spoiler
 description: Spoiler widget for flutter
-version: 1.1.1
+version: 1.2.0
 
 environment:
-  sdk: ">=2.3.0 <3.0.0"
+  sdk: ">=2.12.0 <3.0.0"
 
 dependencies:
   flutter:
     sdk: flutter
-  cupertino_icons: ^0.1.2
+  cupertino_icons: ^1.0.3
 
 dev_dependencies:
   flutter_test:
     sdk: flutter
+
+  lints: ^1.0.1
+  flutter_lints: ^1.0.4
+  dart_code_metrics: ^4.1.0
 
 flutter:
   uses-material-design: true

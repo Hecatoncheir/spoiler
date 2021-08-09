@@ -7,10 +7,11 @@ class SpoilerDetails {
   double childWidth;
   double childHeight;
 
-  SpoilerDetails(
-      {this.isOpened,
-      this.headerWidth,
-      this.headerHeight,
-      this.childWidth,
-      this.childHeight});
+  SpoilerDetails({
+    required this.isOpened,
+    required this.headerWidth,
+    required this.headerHeight,
+    required this.childWidth,
+    required this.childHeight,
+  });
 }
