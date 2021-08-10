@@ -13,8 +13,8 @@ typedef OnReady = Function(SpoilersDetails);
 typedef OnUpdate = Function(SpoilersDetails);
 
 class Spoilers extends StatefulWidget {
-  final Widget header;
-  final List<Spoiler> children;
+  final Widget? header;
+  final List<Spoiler>? children;
 
   final bool isOpened;
 
@@ -23,76 +23,116 @@ class Spoilers extends StatefulWidget {
 
   final Duration duration;
 
-  final bool waitFirstCloseAnimationBeforeOpen;
+  final bool waitCloseAnimationBeforeOpen;
 
-  final OnReady onReadyCallback;
-  final OnUpdate onUpdateCallback;
+  final OnReady? onReadyCallback;
+  final OnUpdate? onUpdateCallback;
 
-  const Spoilers(
-      {this.header,
-      this.children,
-      this.isOpened = false,
-      this.waitFirstCloseAnimationBeforeOpen = false,
-      this.duration,
-      this.onReadyCallback,
-      this.onUpdateCallback,
-      this.openCurve = Curves.easeOutExpo,
-      this.closeCurve = Curves.easeInExpo});
+  const Spoilers({
+    Key? key,
+    this.header,
+    this.children,
+    this.isOpened = false,
+    this.waitCloseAnimationBeforeOpen = false,
+    this.duration = const Duration(milliseconds: 400),
+    this.onReadyCallback,
+    this.onUpdateCallback,
+    this.openCurve = Curves.easeOutExpo,
+    this.closeCurve = Curves.easeInExpo,
+  }) : super(key: key);
 
   @override
   SpoilersState createState() => SpoilersState();
 }
 
 class SpoilersState extends State<Spoilers> with TickerProviderStateMixin {
-  double headerWidth = 0;
-  double headerHeight = 0;
+  @visibleForTesting
+  late double headerWidth;
+  @visibleForTesting
+  late double headerHeight;
 
-  double childWidth = 0;
-  double childHeight = 0;
+  @visibleForTesting
+  late double childWidth;
+  @visibleForTesting
+  late double childHeight;
 
-  final List<Spoiler> children = [];
-  final List<SpoilerData> spoilersChildrenData = [];
+  @visibleForTesting
+  late final List<Spoiler> children;
+  @visibleForTesting
+  late final List<SpoilerData> spoilersChildrenData;
+  @visibleForTesting
+  late final List<SpoilerDetails> spoilersDetails;
 
-  AnimationController childHeightAnimationController;
-  Animation<double> childHeightAnimation;
+  @visibleForTesting
+  late final AnimationController childHeightAnimationController;
+  @visibleForTesting
+  late final Animation<double> childHeightAnimation;
 
-  StreamController<bool> isReadyController = StreamController();
-  Stream<bool> isReady;
+  @visibleForTesting
+  late final StreamController<bool> isReadyController;
+  @visibleForTesting
+  late final Stream<bool> isReady;
 
-  StreamController<bool> isOpenController = StreamController();
-  Stream<bool> isOpen;
+  @visibleForTesting
+  late final StreamController<bool> isOpenController;
+  @visibleForTesting
+  late final Stream<bool> isOpen;
 
-  bool isOpened;
+  @visibleForTesting
+  late bool isOpened;
 
   @override
   void initState() {
     super.initState();
 
+    headerWidth = 0;
+    headerHeight = 0;
+
+    childWidth = 0;
+    childHeight = 0;
+
+    children = <Spoiler>[];
+    spoilersChildrenData = <SpoilerData>[];
+    spoilersDetails = <SpoilerDetails>[];
+
     isOpened = widget.isOpened;
 
-    prepareSpoilersAndDetails(widget.children == null ? [] : widget.children);
+    prepareSpoilersAndDetails(widget.children ?? <Spoiler>[]);
     subscribeOnChildrenEvents(spoilersChildrenData);
 
+    isReadyController = StreamController<bool>();
     isReady = isReadyController.stream.asBroadcastStream();
+
+    isOpenController = StreamController<bool>();
     isOpen = isOpenController.stream.asBroadcastStream();
 
     childHeightAnimationController = AnimationController(
-        duration: widget.duration != null
-            ? widget.duration
-            : Duration(milliseconds: 400),
-        vsync: this);
+      duration: widget.duration,
+      vsync: this,
+    );
 
     childHeightAnimation = CurvedAnimation(
-        parent: childHeightAnimationController,
-        curve: widget.openCurve,
-        reverseCurve: widget.closeCurve);
+      parent: childHeightAnimationController,
+      curve: widget.openCurve,
+      reverseCurve: widget.closeCurve,
+    );
 
-    SchedulerBinding.instance.addPostFrameCallback((_) async {
-      headerWidth = _headerKey.currentContext.size.width;
-      headerHeight = _headerKey.currentContext.size.height;
+    SchedulerBinding.instance!.addPostFrameCallback((_) async {
+      final headerElement = _headerKey.currentContext;
+      final childElement = _childKey.currentContext;
 
-      childWidth = _childKey.currentContext.size.width;
-      childHeight = _childKey.currentContext.size.height;
+      if (headerElement == null || childElement == null) return;
+
+      final headerElementSize = headerElement.size;
+      final childElementSize = childElement.size;
+
+      if (headerElementSize == null || childElementSize == null) return;
+
+      headerWidth = headerElementSize.width;
+      headerHeight = headerElementSize.height;
+
+      childWidth = childElementSize.width;
+      childHeight = childElementSize.height;
 
       await prepareChildrenSize();
 
@@ -100,24 +140,30 @@ class SpoilersState extends State<Spoilers> with TickerProviderStateMixin {
     });
   }
 
+  @visibleForTesting
+  Future<void> prepareChildDetails(int childIndex) async {
+    final spoilerChild = spoilersChildrenData[childIndex];
+
+    final details = await spoilerChild.readyEvents?.stream.first;
+    if (details == null) return;
+
+    spoilersDetails.add(details);
+    spoilersChildrenData[childIndex].details = details;
+  }
+
+  @visibleForTesting
   Future<void> prepareChildrenSize() async {
-    final spoilersSize = <SpoilerDetails>[];
-
-    final spoilersDetailsQueue =
-        Iterable<Future>.generate(spoilersChildrenData.length, (index) async {
-      final details =
-          await spoilersChildrenData[index].readyEvents.stream.first;
-
-      spoilersSize.add(details);
-      spoilersChildrenData[index].details = details;
-    });
+    final spoilersDetailsQueue = Iterable<Future>.generate(
+      spoilersChildrenData.length,
+      prepareChildDetails,
+    );
 
     if (spoilersDetailsQueue.isNotEmpty) {
       await Future.wait(spoilersDetailsQueue);
     }
 
-    for (SpoilerDetails details in spoilersSize) {
-      final spoilerIndex = spoilersSize.indexOf(details);
+    for (SpoilerDetails details in spoilersDetails) {
+      final spoilerIndex = spoilersDetails.indexOf(details);
       final spoilerDetails = spoilersChildrenData[spoilerIndex].details;
 
       spoilerDetails.headerWidth = details.headerWidth;
@@ -180,7 +226,9 @@ class SpoilersState extends State<Spoilers> with TickerProviderStateMixin {
     childHeightAnimationController.reset();
     try {
       await childHeightAnimationController.forward().orCancel;
-    } on TickerCanceled {}
+    } on TickerCanceled {
+      // the animation got canceled, probably because we were disposed
+    }
   }
 
   @override
@@ -207,10 +255,11 @@ class SpoilersState extends State<Spoilers> with TickerProviderStateMixin {
       final key = GlobalKey();
 
       final data = SpoilerData(
-          key: key,
-          readyEvents: detailsReadyController,
-          updateEvents: detailsUpdateController,
-          isOpened: spoiler.isOpened);
+        key: key,
+        readyEvents: detailsReadyController,
+        updateEvents: detailsUpdateController,
+        isOpened: spoiler.isOpened,
+      );
 
       spoilersChildrenData.add(data);
 
@@ -233,8 +282,7 @@ class SpoilersState extends State<Spoilers> with TickerProviderStateMixin {
         isOpened: isOpened ? spoiler.isOpened : false, // need issue
         openCurve: spoiler.openCurve,
         closeCurve: spoiler.closeCurve,
-        waitFirstCloseAnimationBeforeOpen:
-            spoiler.waitFirstCloseAnimationBeforeOpen,
+        waitCloseAnimationBeforeOpen: spoiler.waitCloseAnimationBeforeOpen,
       );
 
       children.add(updatedSpoiler);
@@ -366,13 +414,22 @@ class SpoilersState extends State<Spoilers> with TickerProviderStateMixin {
         ],
       );
 
-  Widget _buildDefaultHeader() => StreamBuilder<bool>(
-      stream: isOpen,
-      initialData: isOpened,
-      builder: (context, snapshot) => Container(
-          margin: EdgeInsets.all(10),
-          height: 20,
-          width: 20,
-          child: Center(
-              child: Center(child: snapshot.data ? Text('-') : Text('+')))));
+  Widget buildDefaultHeader() {
+    return SizedBox(
+      width: 24,
+      height: 24,
+      child: Center(
+        child: StreamBuilder<bool>(
+          stream: isOpen,
+          initialData: isOpened,
+          builder: (context, snapshot) {
+            final isOpened = snapshot.data;
+            if (isOpened == null) return Container();
+
+            return isOpened ? const Text('-') : const Text('+');
+          },
+        ),
+      ),
+    );
+  }
 }

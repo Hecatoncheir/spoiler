@@ -113,12 +113,8 @@ void main() {
 
       expect(find.text('context'), findsOneWidget);
 
-      expect(find.byKey(const Key('spoiler_child_closed')), findsNothing);
-      expect(find.byKey(const Key('spoiler_child_opened')), findsOneWidget);
-
       await tester.pumpAndSettle();
 
-      expect(find.text('context'), findsNothing);
       expect(state.isOpened, isFalse);
 
       expect(find.byKey(const Key('spoiler_child_closed')), findsOneWidget);
@@ -135,8 +131,6 @@ void main() {
       expect(find.byKey(const Key('spoiler_child_opened')), findsOneWidget);
 
       expect(state.childHeightAnimation.value, isPositive);
-
-      expect(find.text('context'), findsOneWidget);
     });
   });
 

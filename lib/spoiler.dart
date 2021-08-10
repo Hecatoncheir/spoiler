@@ -22,7 +22,7 @@ class Spoiler extends StatefulWidget {
 
   final Duration duration;
 
-  final bool waitFirstCloseAnimationBeforeOpen;
+  final bool waitCloseAnimationBeforeOpen;
 
   final OnReady? onReadyCallback;
   final OnUpdate? onUpdateCallback;
@@ -34,7 +34,7 @@ class Spoiler extends StatefulWidget {
     this.isOpened = false,
     this.leadingArrow = false,
     this.trailingArrow = false,
-    this.waitFirstCloseAnimationBeforeOpen = false,
+    this.waitCloseAnimationBeforeOpen = false,
     this.duration = const Duration(milliseconds: 400),
     this.onReadyCallback,
     this.onUpdateCallback,
@@ -48,28 +48,38 @@ class Spoiler extends StatefulWidget {
 
 @visibleForTesting
 class SpoilerState extends State<Spoiler> with SingleTickerProviderStateMixin {
+  @visibleForTesting
   late final AnimationController childHeightAnimationController;
+  @visibleForTesting
   late Animation<double> childHeightAnimation;
 
+  @visibleForTesting
   late final StreamController<bool> isReadyController;
+  @visibleForTesting
   late final Stream<bool> isReady;
 
+  @visibleForTesting
   late final StreamController<bool> isOpenController;
+  @visibleForTesting
   late final Stream<bool> isOpen;
 
+  @visibleForTesting
   late bool isOpened;
 
+  @visibleForTesting
   VoidCallback? onUpdateCallbackListener;
 
-  late final GlobalKey _headerKey;
-  late final GlobalKey _childKey;
+  @visibleForTesting
+  late final GlobalKey headerKey;
+  @visibleForTesting
+  late final GlobalKey childKey;
 
   @override
   void initState() {
     super.initState();
 
-    _headerKey = GlobalKey(debugLabel: 'spoiler_header');
-    _childKey = GlobalKey(debugLabel: 'spoiler_child');
+    headerKey = GlobalKey(debugLabel: 'spoiler_header');
+    childKey = GlobalKey(debugLabel: 'spoiler_child');
 
     isOpened = widget.isOpened;
 
@@ -91,8 +101,8 @@ class SpoilerState extends State<Spoiler> with SingleTickerProviderStateMixin {
     );
 
     SchedulerBinding.instance!.addPostFrameCallback((_) async {
-      final headerElement = _headerKey.currentContext;
-      final childElement = _childKey.currentContext;
+      final headerElement = headerKey.currentContext;
+      final childElement = childKey.currentContext;
 
       if (headerElement == null || childElement == null) return;
 
@@ -145,21 +155,16 @@ class SpoilerState extends State<Spoiler> with SingleTickerProviderStateMixin {
       isReadyController.add(true);
 
       try {
-        if (widget.waitFirstCloseAnimationBeforeOpen) {
+        if (widget.waitCloseAnimationBeforeOpen) {
           isOpened
-              ? await childHeightAnimationController.forward().orCancel
-              : await childHeightAnimationController
-                  .forward()
-                  .orCancel
-                  .whenComplete(
-                  () {
-                    return childHeightAnimationController.reverse().orCancel;
-                  },
-                );
+              ? childHeightAnimationController.forward().orCancel
+              : childHeightAnimationController.forward().orCancel.whenComplete(
+                    () => childHeightAnimationController.reverse().orCancel,
+                  );
         } else {
           isOpened
-              ? await childHeightAnimationController.forward().orCancel
-              : await childHeightAnimationController.reverse().orCancel;
+              ? childHeightAnimationController.forward().orCancel
+              : childHeightAnimationController.reverse().orCancel;
         }
       } on TickerCanceled {
         // the animation got canceled, probably because we were disposed
@@ -181,20 +186,6 @@ class SpoilerState extends State<Spoiler> with SingleTickerProviderStateMixin {
     super.dispose();
   }
 
-  Future<void> toggle() async {
-    try {
-      isOpened = isOpened ? false : true;
-
-      isOpenController.add(isOpened);
-
-      isOpened
-          ? await childHeightAnimationController.forward().orCancel
-          : await childHeightAnimationController.reverse().orCancel;
-    } on TickerCanceled {
-      // the animation got canceled, probably because we were disposed
-    }
-  }
-
   @override
   Widget build(BuildContext context) {
     return Column(
@@ -203,9 +194,7 @@ class SpoilerState extends State<Spoiler> with SingleTickerProviderStateMixin {
       children: <Widget>[
         GestureDetector(
           key: const Key('spoiler_header'),
-          onTap: () => setState(() {
-            toggle();
-          }),
+          onTap: () async => toggle(),
           child: buildHeader(),
         ),
         buildChild(),
@@ -213,26 +202,34 @@ class SpoilerState extends State<Spoiler> with SingleTickerProviderStateMixin {
     );
   }
 
+  @visibleForTesting
+  Future<void> toggle() async {
+    try {
+      isOpened = isOpened ? false : true;
+
+      isOpenController.add(isOpened);
+
+      isOpened
+          ? childHeightAnimationController.forward().orCancel
+          : childHeightAnimationController.reverse().orCancel;
+    } on TickerCanceled {
+      // the animation got canceled, probably because we were disposed
+    }
+  }
+
+  @visibleForTesting
   Widget buildHeader() {
     final header = widget.header;
 
     return Container(
-      key: _headerKey,
+      key: headerKey,
       child: header != null
           ? IntrinsicWidth(
               child: Row(
                 children: <Widget>[
-                  widget.leadingArrow
-                      ? isOpened
-                          ? const Icon(Icons.keyboard_arrow_up)
-                          : const Icon(Icons.keyboard_arrow_down)
-                      : Container(),
+                  widget.leadingArrow ? buildLeadingArrow() : Container(),
                   header,
-                  widget.trailingArrow
-                      ? isOpened
-                          ? const Icon(Icons.keyboard_arrow_up)
-                          : const Icon(Icons.keyboard_arrow_down)
-                      : Container(),
+                  widget.trailingArrow ? buildTrailingArrow() : Container(),
                 ],
               ),
             )
@@ -240,6 +237,39 @@ class SpoilerState extends State<Spoiler> with SingleTickerProviderStateMixin {
     );
   }
 
+  @visibleForTesting
+  Widget buildLeadingArrow() {
+    return StreamBuilder<bool>(
+      stream: isOpen,
+      initialData: isOpened,
+      builder: (context, snapshot) {
+        final isOpened = snapshot.data;
+        if (isOpened == null) return Container();
+
+        return isOpened
+            ? const Icon(Icons.keyboard_arrow_up)
+            : const Icon(Icons.keyboard_arrow_down);
+      },
+    );
+  }
+
+  @visibleForTesting
+  Widget buildTrailingArrow() {
+    return StreamBuilder<bool>(
+      stream: isOpen,
+      initialData: isOpened,
+      builder: (context, snapshot) {
+        final isOpened = snapshot.data;
+        if (isOpened == null) return Container();
+
+        return isOpened
+            ? const Icon(Icons.keyboard_arrow_up)
+            : const Icon(Icons.keyboard_arrow_down);
+      },
+    );
+  }
+
+  @visibleForTesting
   Widget buildChild() {
     return StreamBuilder<bool>(
       stream: isReady,
@@ -252,47 +282,53 @@ class SpoilerState extends State<Spoiler> with SingleTickerProviderStateMixin {
         if (isReady) {
           return AnimatedBuilder(
             animation: childHeightAnimation,
+            child: widget.child,
             builder: (BuildContext context, Widget? child) {
               return SizedBox(
+                height: childHeightAnimation.value,
                 key: isOpened
                     ? const Key('spoiler_child_opened')
                     : const Key('spoiler_child_closed'),
-                child: Wrap(
-                  children: <Widget>[
-                    widget.child ?? Container(),
-                  ],
-                ),
+                child: child ?? Container(),
               );
             },
           );
         }
 
-        return Container(
-          key: isOpened
-              ? const Key('spoiler_child_opened')
-              : const Key('spoiler_child_closed'),
-          child: Container(
-            key: _childKey,
-            child: Wrap(
-              children: <Widget>[
-                widget.child ?? Container(),
-              ],
+        if (!isReady) {
+          return Container(
+            key: isOpened
+                ? const Key('spoiler_child_opened')
+                : const Key('spoiler_child_closed'),
+            child: Container(
+              key: childKey,
+              child: widget.child ?? Container(),
             ),
-          ),
-        );
+          );
+        }
+
+        return Container();
       },
     );
   }
 
+  @visibleForTesting
   Widget buildDefaultHeader() {
-    return StreamBuilder<bool>(
-      stream: isOpen,
-      initialData: isOpened,
-      builder: (context, snapshot) {
-        final isOpened = snapshot.data;
-        if (isOpened == null) return Container();
-        return isOpened ? const Text('-') : const Text('+');
-      },
+    return SizedBox(
+      width: 24,
+      height: 24,
+      child: Center(
+        child: StreamBuilder<bool>(
+          stream: isOpen,
+          initialData: isOpened,
+          builder: (context, snapshot) {
+            final isOpened = snapshot.data;
+            if (isOpened == null) return Container();
+
+            return isOpened ? const Text('-') : const Text('+');
+          },
+        ),
+      ),
     );
   }
 }

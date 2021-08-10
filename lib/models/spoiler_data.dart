@@ -4,9 +4,7 @@ import 'package:flutter/cupertino.dart';
 import 'package:spoiler/models/spoiler_details.dart';
 
 class SpoilerData {
-  // ignore: close_sinks
   StreamController<SpoilerDetails>? updateEvents;
-  // ignore: close_sinks
   StreamController<SpoilerDetails>? readyEvents;
 
   SpoilerDetails? details;
