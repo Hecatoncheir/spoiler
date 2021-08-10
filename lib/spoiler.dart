@@ -282,7 +282,12 @@ class SpoilerState extends State<Spoiler> with SingleTickerProviderStateMixin {
         if (isReady) {
           return AnimatedBuilder(
             animation: childHeightAnimation,
-            child: widget.child,
+            child: Wrap(
+              clipBehavior: Clip.hardEdge,
+              children: [
+                widget.child ?? Container(),
+              ],
+            ),
             builder: (BuildContext context, Widget? child) {
               return SizedBox(
                 height: childHeightAnimation.value,
@@ -302,7 +307,12 @@ class SpoilerState extends State<Spoiler> with SingleTickerProviderStateMixin {
                 : const Key('spoiler_child_closed'),
             child: Container(
               key: childKey,
-              child: widget.child ?? Container(),
+              child: Wrap(
+                clipBehavior: Clip.hardEdge,
+                children: [
+                  widget.child ?? Container(),
+                ],
+              ),
             ),
           );
         }
