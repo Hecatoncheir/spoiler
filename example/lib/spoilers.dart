@@ -14,15 +14,15 @@ class Example extends StatelessWidget {
           child: Container(
             decoration: BoxDecoration(border: Border.all(color: Colors.blue)),
             child: Spoilers(
-              onUpdateCallback: (s) {
-                print(s.childHeight);
-                print(s.isOpened);
+              onUpdateCallback: (details) {
+                print(details.isOpened);
+                print(details.childHeight);
               },
               header: Text("Spoilers example header"),
               children: <Spoiler>[
                 Spoiler(
                   header: Text('First spoiler'),
-                  child: Text('Firsdt example context'),
+                  child: Text('First example context'),
                 ),
                 Spoiler(
                   header: Text('Second spoiler'),

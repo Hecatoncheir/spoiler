@@ -66,7 +66,7 @@ class SpoilersState extends State<Spoilers> with TickerProviderStateMixin {
   @visibleForTesting
   late final AnimationController childHeightAnimationController;
   @visibleForTesting
-  late final Animation<double> childHeightAnimation;
+  late Animation<double> childHeightAnimation;
 
   @visibleForTesting
   late final StreamController<bool> isReadyController;
@@ -80,6 +80,14 @@ class SpoilersState extends State<Spoilers> with TickerProviderStateMixin {
 
   @visibleForTesting
   late bool isOpened;
+
+  @visibleForTesting
+  VoidCallback? onUpdateCallbackListener;
+
+  @visibleForTesting
+  final GlobalKey headerKey = GlobalKey(debugLabel: 'header');
+  @visibleForTesting
+  final GlobalKey childKey = GlobalKey(debugLabel: 'child');
 
   @override
   void initState() {
@@ -118,8 +126,8 @@ class SpoilersState extends State<Spoilers> with TickerProviderStateMixin {
     );
 
     SchedulerBinding.instance!.addPostFrameCallback((_) async {
-      final headerElement = _headerKey.currentContext;
-      final childElement = _childKey.currentContext;
+      final headerElement = headerKey.currentContext;
+      final childElement = childKey.currentContext;
 
       if (headerElement == null || childElement == null) return;
 
@@ -136,8 +144,149 @@ class SpoilersState extends State<Spoilers> with TickerProviderStateMixin {
 
       await prepareChildrenSize();
 
-      prepareFirstAnimation().then((_) => updateCallbacks());
+      final onUpdateCallback = widget.onUpdateCallback;
+      if (onUpdateCallback != null) {
+        onUpdateCallbackListener = () {
+          onUpdateCallback(
+            SpoilersDetails(
+              isOpened: isOpened,
+              headerWidth: headerWidth,
+              headerHeight: headerHeight,
+              childWidth: childWidth,
+              childHeight: childHeightAnimation.value,
+              spoilersDetails: spoilersChildrenData,
+            ),
+          );
+        };
+
+        childHeightAnimation.addListener(onUpdateCallbackListener!);
+      }
+
+      final onReadyCallback = widget.onReadyCallback;
+      if (onReadyCallback != null) {
+        onReadyCallback(
+          SpoilersDetails(
+            isOpened: isOpened,
+            headerWidth: headerWidth,
+            headerHeight: headerHeight,
+            childWidth: childWidth,
+            childHeight: childHeight,
+            spoilersDetails: spoilersChildrenData,
+          ),
+        );
+      }
+
+      isReadyController.add(true);
+
+      childHeightAnimation = childHeightAnimation.drive(isOpened
+          ? Tween(begin: 0.0, end: getSpoilersHeight())
+          : Tween(begin: getSpoilersHeight(), end: 0.0));
+
+      childHeightAnimationController.reset();
+      try {
+        await childHeightAnimationController.forward().orCancel;
+      } on TickerCanceled {
+        // the animation got canceled, probably because we were disposed
+      }
     });
+  }
+
+  @override
+  void dispose() {
+    if (onUpdateCallbackListener != null) {
+      childHeightAnimation.removeListener(onUpdateCallbackListener!);
+    }
+
+    childHeightAnimationController.dispose();
+
+    isOpenController.close();
+    isReadyController.close();
+
+    for (SpoilerData data in spoilersChildrenData) {
+      data.readyEvents?.close();
+      data.updateEvents?.close();
+    }
+
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return Column(
+      mainAxisSize: MainAxisSize.min,
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: <Widget>[
+        GestureDetector(
+          onTap: toggle,
+          child: Container(
+            key: const Key('spoilers_header'),
+            child: Container(
+              key: headerKey,
+              child: widget.header ?? buildDefaultHeader(),
+            ),
+          ),
+        ),
+        StreamBuilder<bool>(
+          stream: isReady,
+          initialData: false,
+          builder: (context, snapshot) {
+            final isReady = snapshot.data;
+            if (isReady == null) return Container();
+
+            if (isReady) {
+              return AnimatedBuilder(
+                animation: childHeightAnimation,
+                builder: (BuildContext context, Widget? child) {
+                  return SizedBox(
+                    key: isOpened
+                        ? const Key('spoilers_child_opened')
+                        : const Key('spoilers_child_closed'),
+                    height: childHeightAnimation.value > 0
+                        ? childHeightAnimation.value
+                        : 0,
+                    child: Wrap(
+                      clipBehavior: Clip.hardEdge,
+                      children: [
+                        Column(
+                          mainAxisAlignment: MainAxisAlignment.start,
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: children.isNotEmpty
+                              ? [for (final spoiler in children) spoiler]
+                              : [Container()],
+                        ),
+                      ],
+                    ),
+                  );
+                },
+              );
+            }
+
+            if (!isReady) {
+              return Container(
+                key: isOpened
+                    ? const Key('spoilers_child_opened')
+                    : const Key('spoilers_child_closed'),
+                child: Container(
+                  key: childKey,
+                  child: Wrap(
+                    children: <Widget>[
+                      Column(
+                        mainAxisSize: MainAxisSize.min,
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children:
+                            children.isNotEmpty ? children : [Container()],
+                      ),
+                    ],
+                  ),
+                ),
+              );
+            }
+
+            return Container();
+          },
+        ),
+      ],
+    );
   }
 
   @visibleForTesting
@@ -164,22 +313,24 @@ class SpoilersState extends State<Spoilers> with TickerProviderStateMixin {
 
     for (SpoilerDetails details in spoilersDetails) {
       final spoilerIndex = spoilersDetails.indexOf(details);
-      final spoilerDetails = spoilersChildrenData[spoilerIndex].details;
+      final spoilerData = spoilersChildrenData[spoilerIndex].details;
 
-      spoilerDetails.headerWidth = details.headerWidth;
-      spoilerDetails.headerHeight = details.headerHeight;
+      if (spoilerData == null) continue;
 
-      spoilerDetails.childWidth = details.childWidth;
-      spoilerDetails.childHeight = details.isOpened ? details.childHeight : 0.0;
+      spoilerData.headerWidth = details.headerWidth;
+      spoilerData.headerHeight = details.headerHeight;
+
+      spoilerData.childWidth = details.childWidth;
+      spoilerData.childHeight = details.isOpened ? details.childHeight : 0.0;
     }
   }
 
+  @visibleForTesting
   void subscribeOnChildrenEvents(List<SpoilerData> spoilersData) {
     for (SpoilerData spoilerData in spoilersData) {
-      // ignore: close_sinks
       final childrenUpdateEvents = spoilerData.updateEvents;
 
-      childrenUpdateEvents.stream.listen((details) {
+      childrenUpdateEvents?.stream.listen((details) {
         spoilerData.details = details;
 
         final spoilersHeight =
@@ -193,63 +344,10 @@ class SpoilersState extends State<Spoilers> with TickerProviderStateMixin {
     }
   }
 
-  void updateCallbacks() {
-    if (widget.onUpdateCallback != null) {
-      childHeightAnimation.addListener(() => widget.onUpdateCallback(
-          SpoilersDetails(
-              isOpened: isOpened,
-              headerWidth: headerWidth,
-              headerHeight: headerHeight,
-              childWidth: childWidth,
-              childHeight: childHeightAnimation.value,
-              spoilersDetails: spoilersChildrenData)));
-    }
-
-    if (widget.onReadyCallback != null) {
-      widget.onReadyCallback(SpoilersDetails(
-          isOpened: isOpened,
-          headerWidth: headerWidth,
-          headerHeight: headerHeight,
-          childWidth: childWidth,
-          childHeight: childHeight,
-          spoilersDetails: spoilersChildrenData));
-    }
-  }
-
-  Future<void> prepareFirstAnimation() async {
-    isReadyController.add(true);
-
-    childHeightAnimation = childHeightAnimation.drive(isOpened
-        ? Tween(begin: 0.0, end: getSpoilersHeight())
-        : Tween(begin: getSpoilersHeight(), end: 0.0));
-
-    childHeightAnimationController.reset();
-    try {
-      await childHeightAnimationController.forward().orCancel;
-    } on TickerCanceled {
-      // the animation got canceled, probably because we were disposed
-    }
-  }
-
-  @override
-  void dispose() {
-    childHeightAnimationController.dispose();
-    isOpenController.close();
-    isReadyController.close();
-
-    for (SpoilerData data in spoilersChildrenData) {
-      data.readyEvents.close();
-      data.updateEvents.close();
-    }
-
-    super.dispose();
-  }
-
+  @visibleForTesting
   void prepareSpoilersAndDetails(List<Spoiler> spoilers) {
     for (Spoiler spoiler in spoilers) {
-      // ignore: close_sinks
       final detailsReadyController = StreamController<SpoilerDetails>();
-      // ignore: close_sinks
       final detailsUpdateController = StreamController<SpoilerDetails>();
 
       final key = GlobalKey();
@@ -263,19 +361,22 @@ class SpoilersState extends State<Spoilers> with TickerProviderStateMixin {
 
       spoilersChildrenData.add(data);
 
+      onReadyCallback(SpoilerDetails details) {
+        final spoilerOnReadyCallback = spoiler.onReadyCallback;
+        if (spoilerOnReadyCallback != null) spoilerOnReadyCallback(details);
+        detailsReadyController.add(details);
+      }
+
+      onUpdateCallback(SpoilerDetails details) {
+        final spoilerOnUpdateCallback = spoiler.onUpdateCallback;
+        if (spoilerOnUpdateCallback != null) spoilerOnUpdateCallback(details);
+        detailsUpdateController.add(details);
+      }
+
       final updatedSpoiler = Spoiler(
         key: key,
-        onReadyCallback: (details) {
-          if (spoiler.onReadyCallback != null) spoiler.onReadyCallback(details);
-          detailsReadyController.add(details);
-        },
-        onUpdateCallback: (details) {
-          if (spoiler.onUpdateCallback != null) {
-            spoiler.onUpdateCallback(details);
-          }
-
-          detailsUpdateController.add(details);
-        },
+        onReadyCallback: onReadyCallback,
+        onUpdateCallback: onUpdateCallback,
         header: spoiler.header,
         child: spoiler.child,
         duration: spoiler.duration,
@@ -289,6 +390,7 @@ class SpoilersState extends State<Spoilers> with TickerProviderStateMixin {
     }
   }
 
+  @visibleForTesting
   Future<void> toggle() async {
     try {
       isOpened = isOpened ? false : true;
@@ -298,10 +400,10 @@ class SpoilersState extends State<Spoilers> with TickerProviderStateMixin {
       final openTween = Tween(begin: 0.0, end: getSpoilersHeight());
       final closeTween = Tween(begin: getSpoilersHeight(), end: 0.0);
       childHeightAnimation = CurvedAnimation(
-              parent: childHeightAnimationController,
-              curve: widget.openCurve,
-              reverseCurve: widget.closeCurve)
-          .drive(isOpened ? openTween : closeTween);
+        parent: childHeightAnimationController,
+        curve: widget.openCurve,
+        reverseCurve: widget.closeCurve,
+      ).drive(isOpened ? openTween : closeTween);
 
       childHeightAnimationController.reset();
 
@@ -311,109 +413,50 @@ class SpoilersState extends State<Spoilers> with TickerProviderStateMixin {
     }
   }
 
+  @visibleForTesting
   double getSpoilersHeaderHeight() {
     double height = 0.0;
 
     for (SpoilerData data in spoilersChildrenData) {
-      height += data.details.headerHeight;
+      final details = data.details;
+      if (details == null) continue;
+      height += details.headerHeight;
     }
 
     return height.toDouble();
   }
 
+  @visibleForTesting
   double getSpoilersHeaderWidth() {
     double width = 0.0;
 
     for (SpoilerData data in spoilersChildrenData) {
-      width += data.details.headerWidth;
+      final details = data.details;
+      if (details == null) continue;
+      width += details.headerWidth;
     }
 
     return width.toDouble();
   }
 
+  @visibleForTesting
   double getSpoilersChildHeight() {
     double height = 0.0;
 
     for (SpoilerData data in spoilersChildrenData) {
-      height += data.details.childHeight;
+      final details = data.details;
+      if (details == null) continue;
+      height += details.childHeight;
     }
 
     return height.toDouble();
   }
 
+  @visibleForTesting
   double getSpoilersHeight() =>
       getSpoilersHeaderHeight() + getSpoilersChildHeight();
 
-  final GlobalKey _headerKey = GlobalKey(debugLabel: 'header');
-  final GlobalKey _childKey = GlobalKey(debugLabel: 'child');
-
-  @override
-  Widget build(BuildContext context) => Column(
-        mainAxisSize: MainAxisSize.min,
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: <Widget>[
-          GestureDetector(
-            onTap: toggle,
-            child: Container(
-              key: Key('spoilers_header'),
-              child: Container(
-                key: _headerKey,
-                child: widget.header != null
-                    ? widget.header
-                    : _buildDefaultHeader(),
-              ),
-            ),
-          ),
-          StreamBuilder<bool>(
-              stream: isReady,
-              initialData: false,
-              builder: (context, snapshot) {
-                if (snapshot.data) {
-                  return AnimatedBuilder(
-                    animation: childHeightAnimation,
-                    builder: (BuildContext context, Widget child) => Container(
-                      key: isOpened
-                          ? Key('spoilers_child_opened')
-                          : Key('spoilers_child_closed'),
-                      height: childHeightAnimation.value > 0
-                          ? childHeightAnimation.value
-                          : 0,
-                      child: Wrap(
-                        children: <Widget>[
-                          Column(
-                            mainAxisSize: MainAxisSize.min,
-                            crossAxisAlignment: CrossAxisAlignment.start,
-                            children:
-                                children.isNotEmpty ? children : [Container()],
-                          ),
-                        ],
-                      ),
-                    ),
-                  );
-                } else {
-                  return Container(
-                    key: isOpened
-                        ? Key('spoilers_child_opened')
-                        : Key('spoilers_child_closed'),
-                    child: Container(
-                      key: _childKey,
-                      child: Wrap(
-                        children: <Widget>[
-                          Column(
-                            mainAxisSize: MainAxisSize.min,
-                            crossAxisAlignment: CrossAxisAlignment.start,
-                            children:
-                                children.isNotEmpty ? children : [Container()],
-                          ),
-                        ],
-                      ),
-                    ),
-                  );
-                }
-              }),
-        ],
-      );
-
+  @visibleForTesting
   Widget buildDefaultHeader() {
     return SizedBox(
       width: 24,

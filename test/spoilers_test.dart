@@ -67,7 +67,7 @@ void main() {
 
       final SpoilersState state = tester.state(find.byWidget(testWidget));
 
-      await tester.pumpAndSettle(const Duration(seconds: 1));
+      await tester.pumpAndSettle(const Duration(milliseconds: 600));
 
       expect(state.isOpened, isFalse);
 
@@ -78,7 +78,14 @@ void main() {
 
       await tester.tap(find.byKey(const Key('spoilers_header')));
       await tester.pumpAndSettle();
-      await tester.runAsync(() => Future.delayed(const Duration(seconds: 1)));
+
+      await tester.runAsync(
+        () => Future.delayed(
+          const Duration(
+            milliseconds: 600,
+          ),
+        ),
+      );
 
       await tester.pumpAndSettle();
       expect(state.isOpened, isTrue);
@@ -275,7 +282,7 @@ void main() {
       await tester.pumpWidget(MaterialApp(home: Scaffold(body: widget)));
       final SpoilersState state = tester.state(find.byWidget(widget));
 
-      await tester.pumpAndSettle(const Duration(seconds: 3));
+      await tester.pumpAndSettle(const Duration(milliseconds: 600));
 
       expect(spoilersDetails, isNotNull);
       expect(spoilersDetails.isOpened, isFalse);
@@ -283,7 +290,7 @@ void main() {
       expect(state.isOpened, isFalse);
 
       await tester.tap(find.byKey(const Key('spoilers_header')));
-      await tester.pumpAndSettle(const Duration(seconds: 3));
+      await tester.pumpAndSettle(const Duration(milliseconds: 600));
 
       expect(spoilersDetails.isOpened, isFalse);
       expect(details.last.isOpened, isTrue);
@@ -297,8 +304,8 @@ void main() {
 
       await tester.tap(find.byKey(const Key('spoilers_header')));
       await tester.pumpAndSettle();
-      await tester.pumpAndSettle(const Duration(seconds: 3));
-      await tester.pump(const Duration(seconds: 3));
+      await tester.pumpAndSettle(const Duration(milliseconds: 600));
+      await tester.pump(const Duration(milliseconds: 600));
 
       expect(state.isOpened, false);
 
