@@ -1,6 +1,6 @@
 name: spoiler
 description: Spoiler widget for flutter
-version: 1.3.0
+version: 1.3.1
 
 environment:
   sdk: ">=2.12.0 <3.0.0"
