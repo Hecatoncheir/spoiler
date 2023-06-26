@@ -7,7 +7,7 @@ Spoiler widget for flutter.
 ```dart
 child: Spoiler(openCurve: Curves.elasticOut,
                closeCurve: Curves.elasticIn,
-               header: Text("Tools", style: TextStyle(color: Colors.white)),
+               headerWhenSpoilerClosed: Text("Tools", style: TextStyle(color: Colors.white)),
                child: GameControl())
 ```
 
@@ -20,11 +20,11 @@ child: Spoilers(
          header: Text("Spoilers example header"),
          children: <Spoiler>[
            Spoiler(
-             header: Text('First spoiler'),
+             headerWhenSpoilerClosed: Text('First spoiler'),
                child: Text('Firsdt example context'),
            ),
            Spoiler(
-             header: Text('Second spoiler'),
+             headerWhenSpoilerClosed: Text('Second spoiler'),
                child: Text('Second example context'),
            ),
          ],
