@@ -2,14 +2,14 @@ import 'dart:async';
 
 import 'package:flutter/material.dart';
 import 'package:flutter/scheduler.dart';
-
 import 'package:spoiler/models/spoiler_details.dart';
 
 typedef OnReady = Function(SpoilerDetails);
 typedef OnUpdate = Function(SpoilerDetails);
 
 class Spoiler extends StatefulWidget {
-  final Widget? header;
+  final Widget? headerWhenSpoilerClosed;
+  final Widget? headerWhenSpoilerOpened;
   final Widget? child;
 
   final bool isOpened;
@@ -29,7 +29,8 @@ class Spoiler extends StatefulWidget {
 
   const Spoiler({
     Key? key,
-    this.header,
+    this.headerWhenSpoilerClosed,
+    this.headerWhenSpoilerOpened,
     this.child,
     this.isOpened = false,
     this.leadingArrow = false,
@@ -219,7 +220,8 @@ class SpoilerState extends State<Spoiler> with SingleTickerProviderStateMixin {
 
   @visibleForTesting
   Widget buildHeader() {
-    final header = widget.header;
+    final header =
+        widget.headerWhenSpoilerClosed ?? widget.headerWhenSpoilerOpened;
 
     return Container(
       key: headerKey,
@@ -228,12 +230,32 @@ class SpoilerState extends State<Spoiler> with SingleTickerProviderStateMixin {
               child: Row(
                 children: <Widget>[
                   widget.leadingArrow ? buildLeadingArrow() : Container(),
-                  header,
+                  buildHeaderBySpoilerState(),
                   widget.trailingArrow ? buildTrailingArrow() : Container(),
                 ],
               ),
             )
           : buildDefaultHeader(),
+    );
+  }
+
+  Widget buildHeaderBySpoilerState() {
+    final headerWhenSpoilerClosed =
+        widget.headerWhenSpoilerClosed ?? widget.headerWhenSpoilerOpened;
+    final headerWhenSpoilerOpened =
+        widget.headerWhenSpoilerOpened ?? widget.headerWhenSpoilerClosed;
+
+    return StreamBuilder<bool>(
+      stream: isOpen,
+      initialData: isOpened,
+      builder: (context, snapshot) {
+        final isOpened = snapshot.data;
+        if (isOpened == null) return Container();
+
+        return isOpened
+            ? headerWhenSpoilerOpened ?? Container()
+            : headerWhenSpoilerClosed ?? Container();
+      },
     );
   }
 

@@ -1,8 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
-
 import 'package:spoiler/models/spoiler_details.dart';
-
 import 'package:spoiler/spoiler.dart';
 
 void main() {
@@ -23,7 +21,7 @@ void main() {
 
     testWidgets('can show custom header', (WidgetTester tester) async {
       const testWidget = Spoiler(
-        header: Text(
+        headerWhenSpoilerClosed: Text(
           "test header name",
         ),
       );
@@ -39,9 +37,36 @@ void main() {
       expect(find.text('test header name'), findsOneWidget);
     });
 
+    testWidgets('can show custom header', (WidgetTester tester) async {
+      const testWidget = Spoiler(
+        headerWhenSpoilerClosed: Text(
+          "test header name when close",
+        ),
+        headerWhenSpoilerOpened: Text(
+          "test header name when open",
+        ),
+      );
+
+      const widget = MaterialApp(
+        home: Scaffold(
+          body: testWidget,
+        ),
+      );
+
+      await tester.pumpWidget(widget);
+
+      expect(find.text('test header name when close'), findsOneWidget);
+
+      await tester.tap(find.text('test header name when close'));
+      await tester.pumpAndSettle();
+
+      expect(find.text('test header name when close'), findsNothing);
+      expect(find.text('test header name when open'), findsOneWidget);
+    });
+
     testWidgets('can show leading arrow', (WidgetTester tester) async {
       const testWidget = Spoiler(
-        header: SizedBox(
+        headerWhenSpoilerClosed: SizedBox(
           width: 10,
         ),
         leadingArrow: true,
@@ -69,7 +94,7 @@ void main() {
 
     testWidgets('can show trailing arrow', (WidgetTester tester) async {
       const testWidget = Spoiler(
-        header: SizedBox(width: 10),
+        headerWhenSpoilerClosed: SizedBox(width: 10),
         trailingArrow: true,
       );
 
@@ -140,7 +165,7 @@ void main() {
 
       final testWidget = Spoiler(
         onReadyCallback: (details) => spoilerDetails = details,
-        header: const SizedBox(width: 10, height: 15),
+        headerWhenSpoilerClosed: const SizedBox(width: 10, height: 15),
         child: const SizedBox(width: 20, height: 25),
       );
 

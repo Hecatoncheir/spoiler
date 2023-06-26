@@ -1,11 +1,8 @@
-import 'dart:async';
-
-import 'package:flutter_test/flutter_test.dart';
 import 'package:flutter/material.dart';
-
+import 'package:flutter_test/flutter_test.dart';
+import 'package:spoiler/models/spoilers_details.dart';
 import 'package:spoiler/spoiler.dart';
 import 'package:spoiler/spoilers.dart';
-import 'package:spoiler/models/spoilers_details.dart';
 
 void main() {
   group('Spoilers widget', () {
@@ -103,7 +100,7 @@ void main() {
     testWidgets('can be invoked when widgets ready', (tester) async {
       const firstSpoiler = Spoiler(
         isOpened: true,
-        header: SizedBox(
+        headerWhenSpoilerClosed: SizedBox(
           width: 10,
           height: 15,
           child: Text('first spoiler header'),
@@ -117,7 +114,7 @@ void main() {
 
       const secondSpoiler = Spoiler(
         isOpened: true,
-        header: SizedBox(
+        headerWhenSpoilerClosed: SizedBox(
           width: 10,
           height: 15,
           child: Text('second spoiler header'),
@@ -173,7 +170,7 @@ void main() {
     testWidgets('can be invoked when widgets ready', (tester) async {
       const firstSpoiler = Spoiler(
         isOpened: false,
-        header: SizedBox(
+        headerWhenSpoilerClosed: SizedBox(
           width: 10,
           height: 15,
           child: Text('first spoiler header'),
@@ -187,7 +184,7 @@ void main() {
 
       const secondSpoiler = Spoiler(
         isOpened: false,
-        header: SizedBox(
+        headerWhenSpoilerClosed: SizedBox(
           width: 10,
           height: 15,
           child: Text('second spoiler header'),
@@ -242,7 +239,7 @@ void main() {
     testWidgets('can be send when widgets toggle and height or width change',
         (tester) async {
       const firstSpoiler = Spoiler(
-        header: SizedBox(
+        headerWhenSpoilerClosed: SizedBox(
           width: 10,
           height: 15,
           child: Text('first spoiler header'),
@@ -255,7 +252,7 @@ void main() {
       );
 
       const secondSpoiler = Spoiler(
-        header: SizedBox(
+        headerWhenSpoilerClosed: SizedBox(
           width: 10,
           height: 15,
           child: Text('second spoiler header'),

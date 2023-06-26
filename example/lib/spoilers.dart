@@ -1,5 +1,4 @@
 import 'package:flutter/material.dart';
-
 import 'package:spoiler/spoiler.dart';
 import 'package:spoiler/spoilers.dart';
 
@@ -21,11 +20,11 @@ class Example extends StatelessWidget {
               header: Text("Spoilers example header"),
               children: <Spoiler>[
                 Spoiler(
-                  header: Text('First spoiler'),
+                  headerWhenSpoilerClosed: Text('First spoiler'),
                   child: Text('First example context'),
                 ),
                 Spoiler(
-                  header: Text('Second spoiler'),
+                  headerWhenSpoilerClosed: Text('Second spoiler'),
                   child: Text('Second example context'),
                 ),
               ],

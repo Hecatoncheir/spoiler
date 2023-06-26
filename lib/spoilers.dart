@@ -2,7 +2,6 @@ import 'dart:async';
 
 import 'package:flutter/scheduler.dart';
 import 'package:flutter/widgets.dart';
-
 import 'package:spoiler/models/spoiler_data.dart';
 import 'package:spoiler/models/spoiler_details.dart';
 import 'package:spoiler/models/spoilers_details.dart';
@@ -377,7 +376,7 @@ class SpoilersState extends State<Spoilers> with TickerProviderStateMixin {
         key: key,
         onReadyCallback: onReadyCallback,
         onUpdateCallback: onUpdateCallback,
-        header: spoiler.header,
+        headerWhenSpoilerClosed: spoiler.headerWhenSpoilerClosed,
         child: spoiler.child,
         duration: spoiler.duration,
         isOpened: isOpened ? spoiler.isOpened : false, // need issue
