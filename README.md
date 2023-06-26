@@ -35,7 +35,7 @@ child: Spoilers(
 
 ## TODO:
  - [x] Custom header. 
- - [ ] Custom open header and custom close header.
+ - [x] Custom open header and custom close header.
  - [x] On open callback with header height and child height arguments.
  - [x] On close callback with header height and child height arguments.
  - [x] Get only header height for spoiler in spoiler widgets.
